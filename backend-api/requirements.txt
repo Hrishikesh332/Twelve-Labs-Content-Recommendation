@@ -8,3 +8,4 @@ pillow
 Werkzeug
 gunicorn
 flask-cors
+apscheduler

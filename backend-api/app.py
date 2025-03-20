@@ -10,6 +10,11 @@ from werkzeug.utils import secure_filename
 import json
 from flask_cors import CORS
 
+
+from apscheduler.schedulers.background import BackgroundScheduler
+from datetime import datetime
+import atexit
+
 app = Flask(__name__)
 CORS(app)
 
@@ -513,6 +518,29 @@ try:
 except Exception as e:
     logger.error(f"Failed to initialize Qdrant: {str(e)}")
     raise
+
+
+
+def wake_up_app():
+    try:
+        app_url = os.getenv('APP_URL')
+        if app_url:
+            response = requests.get(app_url)
+            if response.status_code == 200:
+                print(f"Successfully pinged {app_url} at {datetime.now()}")
+            else:
+                print(f"Failed to ping {app_url} (status code: {response.status_code}) at {datetime.now()}")
+        else:
+            print("APP_URL environment variable not set.")
+    except Exception as e:
+        print(f"Error occurred while pinging app: {e}")
+
+scheduler = BackgroundScheduler()
+scheduler.add_job(wake_up_app, 'interval', minutes=9)
+scheduler.start()
+
+atexit.register(lambda: scheduler.shutdown())
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
