@@ -1,0 +1,41 @@
+.bg-image {
+    position: relative;
+  }
+  
+  .bg-image::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url('/images/background.jpg');
+    background-size: cover;
+    background-position: center;
+    z-index: -1;
+  }
+  
+  @keyframes slide-in-from-bottom {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  
+  .animate-in {
+    animation-duration: 300ms;
+    animation-timing-function: ease-out;
+    animation-fill-mode: forwards;
+  }
+  
+  .slide-in-from-bottom {
+    animation-name: slide-in-from-bottom;
+  }
+  
+  .duration-300 {
+    animation-duration: 300ms;
+  }
