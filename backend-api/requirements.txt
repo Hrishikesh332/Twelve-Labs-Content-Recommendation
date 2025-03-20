@@ -1,8 +1,9 @@
-flask==2.3.3
-python-dotenv==1.0.0
-twelvelabs==0.2.0
-qdrant-client==1.7.0
-Werkzeug==2.3.7
-requests==2.31.0
-pillow==10.0.0
+flask
+python-dotenv
+twelvelabs
+qdrant-client
 Werkzeug
+requests
+pillow
+Werkzeug
+gunicorn
