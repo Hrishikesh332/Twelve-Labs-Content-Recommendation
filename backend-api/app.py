@@ -135,62 +135,62 @@ def health_check():
 
 # Handle video upload and embedding generation
 #------------------Not Using-----------------
-@app.route('/upload_video', methods=['POST'])
-def upload_video():
-    if 'video' not in request.files:
-        return jsonify({'error': 'No video file provided'}), 400
+# @app.route('/upload_video', methods=['POST'])
+# def upload_video():
+#     if 'video' not in request.files:
+#         return jsonify({'error': 'No video file provided'}), 400
     
-    video_file = request.files['video']
-    if not video_file or not allowed_file(video_file.filename):
-        return jsonify({'error': 'Invalid video file'}), 400
-    try:
-        filename = secure_filename(video_file.filename)
-        temp_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        video_file.save(temp_path)
+#     video_file = request.files['video']
+#     if not video_file or not allowed_file(video_file.filename):
+#         return jsonify({'error': 'Invalid video file'}), 400
+#     try:
+#         filename = secure_filename(video_file.filename)
+#         temp_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+#         video_file.save(temp_path)
         
-        # Generate embeddings using TwelveLabs
-        logger.info("Generating video embeddings...")
-        task = client.embed.task.create(
-            model_name="Marengo-retrieval-2.7",
-            video_file=temp_path
-        )
+#         # Generate embeddings using TwelveLabs
+#         logger.info("Generating video embeddings...")
+#         task = client.embed.task.create(
+#             model_name="Marengo-retrieval-2.7",
+#             video_file=temp_path
+#         )
         
-        task.wait_for_done(sleep_interval=3)
-        task_result = client.embed.task.retrieve(task.id)
+#         task.wait_for_done(sleep_interval=3)
+#         task_result = client.embed.task.retrieve(task.id)
 
-        video_id = str(uuid.uuid4())
-        permanent_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{video_id}.mp4")
-        os.rename(temp_path, permanent_path)
+#         video_id = str(uuid.uuid4())
+#         permanent_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{video_id}.mp4")
+#         os.rename(temp_path, permanent_path)
         
-        # Store embeddings in Qdrant
-        points = [
-            PointStruct(
-                id=f"{video_id}_{idx}",
-                vector=segment.embeddings_float,
-                payload={
-                    'video_id': video_id,
-                    'filename': filename,
-                    'start_time': segment.start_offset_sec,
-                    'end_time': segment.end_offset_sec,
-                    'file_path': permanent_path
-                }
-            )
-            for idx, segment in enumerate(task_result.video_embedding.segments)
-        ]
-        qdrant_client.upsert(
-            collection_name=COLLECTION_NAME,
-            points=points
-        )
-        return jsonify({
-            'message': 'Video processed successfully',
-            'video_id': video_id,
-            'segments': len(points)
-        })
-    except Exception as e:
-        logger.error(f"Upload error: {str(e)}")
-        if 'temp_path' in locals() and os.path.exists(temp_path):
-            os.remove(temp_path)
-        return jsonify({'error': str(e)}), 500
+#         # Store embeddings in Qdrant
+#         points = [
+#             PointStruct(
+#                 id=f"{video_id}_{idx}",
+#                 vector=segment.embeddings_float,
+#                 payload={
+#                     'video_id': video_id,
+#                     'filename': filename,
+#                     'start_time': segment.start_offset_sec,
+#                     'end_time': segment.end_offset_sec,
+#                     'file_path': permanent_path
+#                 }
+#             )
+#             for idx, segment in enumerate(task_result.video_embedding.segments)
+#         ]
+#         qdrant_client.upsert(
+#             collection_name=COLLECTION_NAME,
+#             points=points
+#         )
+#         return jsonify({
+#             'message': 'Video processed successfully',
+#             'video_id': video_id,
+#             'segments': len(points)
+#         })
+#     except Exception as e:
+#         logger.error(f"Upload error: {str(e)}")
+#         if 'temp_path' in locals() and os.path.exists(temp_path):
+#             os.remove(temp_path)
+#         return jsonify({'error': str(e)}), 500
 
 
 # Handle text based search for video segments
@@ -346,8 +346,8 @@ def search():
                             'score': 0.5, 
                             'confidence': 'medium'
                         }
-                        formatted_results.append(result)
-                        logger.info(f"Added fallback result: {result['video_id']}")
+                        # formatted_results.append(result)
+                        # logger.info(f"Added fallback result: {result['video_id']}")
                     except Exception as e:
                         logger.warning(f"Skipping malformed result: {str(e)}")
                         continue
@@ -376,42 +376,6 @@ def search():
                     'score': 0.95,
                     'confidence': 'high',
                     'url': 'https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos-embed/08ff403a-63e7-4188-9eed-3858f4457173_078_🧑‍🍳 Experimenting With Flavors! ｜ Ratatouille ｜ Disney Kids_pwpRSNCdr6w.mp4'
-                },
-                {
-                    'video_id': 'dory',
-                    'filename': 'dory.mp4',
-                    'start_time': 0,
-                    'end_time': 30,
-                    'score': 0.92,
-                    'confidence': 'high',
-                    'url': 'https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos-embed/06c17740-1b34-4af3-b1fc-c8ab586915f7_054_🚤 Dory\'s Next Stop! ｜ Finding Dory ｜ Disney Kids_HaL1PU3hpvY.mp4'
-                },
-                {
-                    'video_id': 'buzz',
-                    'filename': 'buzz.mp4',
-                    'start_time': 0,
-                    'end_time': 30,
-                    'score': 0.9,
-                    'confidence': 'high',
-                    'url': 'https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos-embed/1ba5cedc-9abe-4b2d-b4be-1a9e65bfcd17_001_👨‍🚀 Just Buzz being Buzz_xuWRqYuK5k0.mp4'
-                },
-                {
-                    'video_id': 'bugs-life',
-                    'filename': 'bugs-life.mp4',
-                    'start_time': 0,
-                    'end_time': 30,
-                    'score': 0.88,
-                    'confidence': 'high',
-                    'url': 'https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos-embed/761322bf-fcd4-4041-bce0-aa42319ce0f9_062_🔥 The Show Everyone\'s Excited About! ｜ A Bug\'s Life ｜ Disney Kids_ok3z52oMv8A.mp4'
-                },
-                {
-                    'video_id': 'frozen',
-                    'filename': 'frozen.mp4',
-                    'start_time': 0,
-                    'end_time': 30,
-                    'score': 0.86,
-                    'confidence': 'high',
-                    'url': 'https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos-embed/1203fb1a-ef99-4cc0-a212-8bf1589216ea_044_🗻 Frozen Quest： Can Anna Stop Winter？ ｜ Frozen ｜ Disney Kids_UrrHl9p2XDM.mp4'
                 }
             ]
             return jsonify(mock_results)
@@ -472,42 +436,6 @@ def search():
                 'score': 0.95,
                 'confidence': 'high',
                 'url': 'https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos-embed/08ff403a-63e7-4188-9eed-3858f4457173_078_🧑‍🍳 Experimenting With Flavors! ｜ Ratatouille ｜ Disney Kids_pwpRSNCdr6w.mp4'
-            },
-            {
-                'video_id': 'dory',
-                'filename': 'dory.mp4',
-                'start_time': 0,
-                'end_time': 30,
-                'score': 0.92,
-                'confidence': 'high',
-                'url': 'https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos-embed/06c17740-1b34-4af3-b1fc-c8ab586915f7_054_🚤 Dory\'s Next Stop! ｜ Finding Dory ｜ Disney Kids_HaL1PU3hpvY.mp4'
-            },
-            {
-                'video_id': 'buzz',
-                'filename': 'buzz.mp4',
-                'start_time': 0,
-                'end_time': 30,
-                'score': 0.9,
-                'confidence': 'high',
-                'url': 'https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos-embed/1ba5cedc-9abe-4b2d-b4be-1a9e65bfcd17_001_👨‍🚀 Just Buzz being Buzz_xuWRqYuK5k0.mp4'
-            },
-            {
-                'video_id': 'bugs-life',
-                'filename': 'bugs-life.mp4',
-                'start_time': 0,
-                'end_time': 30,
-                'score': 0.88,
-                'confidence': 'high',
-                'url': 'https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos-embed/761322bf-fcd4-4041-bce0-aa42319ce0f9_062_🔥 The Show Everyone\'s Excited About! ｜ A Bug\'s Life ｜ Disney Kids_ok3z52oMv8A.mp4'
-            },
-            {
-                'video_id': 'frozen',
-                'filename': 'frozen.mp4',
-                'start_time': 0,
-                'end_time': 30,
-                'score': 0.86,
-                'confidence': 'high',
-                'url': 'https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos-embed/1203fb1a-ef99-4cc0-a212-8bf1589216ea_044_🗻 Frozen Quest： Can Anna Stop Winter？ ｜ Frozen ｜ Disney Kids_UrrHl9p2XDM.mp4'
             }
         ]
         logger.info("Returning mock data due to error")

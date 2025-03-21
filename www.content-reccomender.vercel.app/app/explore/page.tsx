@@ -108,7 +108,6 @@ const fallbackVideos = [
 
 // Map of video categories to fallback videos - updated with Disney content
 const categoryFallbacks = {
-  sports: "https://assets.mixkit.co/videos/preview/mixkit-soccer-player-dribbling-a-ball-40377-large.mp4",
   music:
     "https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos-embed/919c946b-5dd2-49b5-b100-d4e5d136d85d_006_🧼 Wash Your Hands Song! ｜ Doc McStuffins ｜ Disney Kids_pboMdDuCJFQ.mp4",
   travel:
@@ -152,7 +151,7 @@ export default function ExplorePage() {
       console.log("Fetching videos for query:", query)
 
       // Try to fetch from backend
-      const response = await fetch("http://localhost:5000/search", {
+      const response = await fetch("https://twelve-labs-content-recommendation.onrender.com/search", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
