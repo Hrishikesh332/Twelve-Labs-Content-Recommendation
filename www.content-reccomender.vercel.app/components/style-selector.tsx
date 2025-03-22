@@ -1,29 +1,52 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from "@/components/ui/drawer"
 
+// Update the interface to include showSearchForm parameter
 interface StyleSelectorProps {
   onClose: () => void
-  onChangePreferences?: () => void
+  onChangePreferences?: (theme?: string, mood?: string, showSearchForm?: boolean) => void
+  initialTheme?: string
+  initialMood?: string
 }
 
-export default function StyleSelector({ onClose, onChangePreferences }: StyleSelectorProps) {
-  const [theme, setTheme] = useState("")
-  const [mood, setMood] = useState("")
+export default function StyleSelector({
+  onClose,
+  onChangePreferences,
+  initialTheme = "",
+  initialMood = "",
+}: StyleSelectorProps) {
+  const [theme, setTheme] = useState(initialTheme)
+  const [mood, setMood] = useState(initialMood)
+
+  // Update local state when props change
+  useEffect(() => {
+    setTheme(initialTheme)
+    setMood(initialMood)
+  }, [initialTheme, initialMood])
 
   const handleSubmit = () => {
     console.log("Selected preferences:", { theme, mood })
-    // Here you would typically send these preferences to your backend
-
-    // Call the onChangePreferences callback to update videos
+    // Call the onChangePreferences callback to update videos with the new theme and mood
     if (onChangePreferences) {
-      onChangePreferences()
+      onChangePreferences(theme, mood)
     } else {
       onClose()
     }
+  }
+
+  // Update the handleNewSearch function to properly reset and show the search form
+  const handleNewSearch = () => {
+    console.log("Resetting preferences and starting new search")
+    // Reset theme and mood and trigger new search
+    if (onChangePreferences) {
+      // Pass empty strings to reset theme and mood, and add a special flag to show the search form
+      onChangePreferences("", "", true)
+    }
+    onClose()
   }
 
   return (
@@ -39,11 +62,16 @@ export default function StyleSelector({ onClose, onChangePreferences }: StyleSel
               <SelectValue placeholder="Choose an option" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="sports">Sports</SelectItem>
-              <SelectItem value="music">Music</SelectItem>
-              <SelectItem value="travel">Travel</SelectItem>
-              <SelectItem value="food">Food</SelectItem>
-              <SelectItem value="fashion">Fashion</SelectItem>
+              <SelectItem value="animation">Animation</SelectItem>
+              <SelectItem value="pixar">Pixar</SelectItem>
+              <SelectItem value="disney">Disney</SelectItem>
+              <SelectItem value="dreamworks">DreamWorks</SelectItem>
+              <SelectItem value="anime">Anime</SelectItem>
+              <SelectItem value="cartoon">Cartoon</SelectItem>
+              <SelectItem value="stopmotion">Stop Motion</SelectItem>
+              <SelectItem value="3d">3D Animation</SelectItem>
+              <SelectItem value="classic">Classic Animation</SelectItem>
+              <SelectItem value="superhero">Superhero</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -55,11 +83,16 @@ export default function StyleSelector({ onClose, onChangePreferences }: StyleSel
               <SelectValue placeholder="Choose an option" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="energetic">Energetic</SelectItem>
-              <SelectItem value="relaxed">Relaxed</SelectItem>
-              <SelectItem value="inspirational">Inspirational</SelectItem>
-              <SelectItem value="educational">Educational</SelectItem>
-              <SelectItem value="entertaining">Entertaining</SelectItem>
+              <SelectItem value="adventure">Adventure</SelectItem>
+              <SelectItem value="comedy">Comedy</SelectItem>
+              <SelectItem value="fantasy">Fantasy</SelectItem>
+              <SelectItem value="family">Family-Friendly</SelectItem>
+              <SelectItem value="action">Action</SelectItem>
+              <SelectItem value="emotional">Emotional</SelectItem>
+              <SelectItem value="musical">Musical</SelectItem>
+              <SelectItem value="magical">Magical</SelectItem>
+              <SelectItem value="nostalgic">Nostalgic</SelectItem>
+              <SelectItem value="epic">Epic</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -72,13 +105,10 @@ export default function StyleSelector({ onClose, onChangePreferences }: StyleSel
         {onChangePreferences && (
           <Button
             variant="outline"
-            onClick={() => {
-              onChangePreferences()
-              onClose()
-            }}
+            onClick={handleNewSearch}
             className="border-gray-300 text-gray-700 hover:bg-gray-50"
           >
-            New Search
+            Reset & New Search
           </Button>
         )}
 

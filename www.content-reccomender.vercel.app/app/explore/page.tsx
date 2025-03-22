@@ -12,7 +12,6 @@ import Navbar from "@/components/navbar"
 import Image from "next/image"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-
 const fallbackVideos = [
   {
     video_id: "ratatouille",
@@ -124,6 +123,13 @@ const categoryFallbacks = {
   kids: "https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos-embed/365d8546-568f-4682-b336-17be6f4cdd2e_097_🎁 Bob Cratchit's Best Christmas Gift Yet!  ｜ Mickey's Christmas Carol ｜ Disney Kids_PTpP-TSCkRg.mp4",
   winter:
     "https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos-embed/1203fb1a-ef99-4cc0-a212-8bf1589216ea_044_🗻 Frozen Quest： Can Anna Stop Winter？ ｜ Frozen ｜ Disney Kids_UrrHl9p2XDM.mp4",
+  // Add animation-specific categories
+  pixar:
+    "https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos-embed/08ff403a-63e7-4188-9eed-3858f4457173_078_🧑‍🍳 Experimenting With Flavors! ｜ Ratatouille ｜ Disney Kids_pwpRSNCdr6w.mp4",
+  disney:
+    "https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos-embed/26b8a1b0-278d-459b-8504-44d01fcd4672_002_⚔️ Mulan ｜ Movies in 60 Seconds ｜ Disney Kids_R-96-CEZ100.mp4",
+  dreamworks:
+    "https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos-embed/5d4ed77c-8385-4391-a717-689a6ef603b3_066_Syndrome's Big Plan Unleashed! 💣 ｜ The Incredibles ｜ Disney Kids_m_6w7hirrzE.mp4",
 }
 
 export default function ExplorePage() {
@@ -142,25 +148,81 @@ export default function ExplorePage() {
   const [hasSearched, setHasSearched] = useState(false)
   const [currentQuery, setCurrentQuery] = useState("")
 
-  const fetchVideos = async (query: string) => {
+  // State for theme and mood
+  const [theme, setTheme] = useState("")
+  const [mood, setMood] = useState("")
+
+  // Debug logging for API calls
+  const logApiCall = (method: string, url: string, body: any) => {
+    console.log(`API ${method} to ${url}:`, body)
+  }
+
+  // Create a fresh search query based on the base query and preferences
+  const createSearchQuery = (baseQuery: string, themeValue?: string, moodValue?: string) => {
+    // Start with just the base query - no additional terms
+    let finalQuery = baseQuery.trim()
+
+    // Create an array of additional terms
+    const additionalTerms = []
+
+    // Add theme if provided
+    if (themeValue) {
+      additionalTerms.push(themeValue)
+    }
+
+    // Add mood if provided
+    if (moodValue) {
+      additionalTerms.push(moodValue)
+    }
+
+    // Add context-specific terms based on the base query
+    // if (baseQuery.toLowerCase().includes("disney")) {
+    //   additionalTerms.push("magical family-friendly animation")
+    // } else if (baseQuery.toLowerCase().includes("pixar")) {
+    //   additionalTerms.push("animated story")
+    // } else if (baseQuery.toLowerCase().includes("adventure")) {
+    //   additionalTerms.push("exciting journey")
+    // } else if (baseQuery.toLowerCase().includes("comedy")) {
+    //   additionalTerms.push("funny humorous")
+    // }
+
+    // If we have additional terms, add them to the query
+    if (additionalTerms.length > 0) {
+      finalQuery += " " + additionalTerms.join(" ")
+    }
+
+    console.log("Created fresh search query:", finalQuery)
+    return finalQuery
+  }
+
+  // Update the fetchVideos function to use the new createSearchQuery function
+  const fetchVideos = async (query: string, themeValue?: string, moodValue?: string) => {
     setIsLoading(true)
     setError(null)
-    setCurrentQuery(query)
+    // Don't update currentQuery here - it should only be set in handleSearch
+    // setCurrentQuery(query);
 
     try {
-      console.log("Fetching videos for query:", query)
+      // Create a fresh search query
+      const freshQuery = createSearchQuery(query, themeValue, moodValue)
+
+      console.log("Fetching videos with query:", freshQuery)
+
+      // Log the API call we're about to make
+      const requestBody = { query: freshQuery }
+      logApiCall("POST", "http://localhost:5000/search", requestBody)
 
       // Try to fetch from backend
-      const response = await fetch("https://twelve-labs-content-recommendation.onrender.com/search", {
+      const response = await fetch("http://localhost:5000/search", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          query: query,
-        }),
-        signal: AbortSignal.timeout(10000),
+        body: JSON.stringify(requestBody),
+        signal: AbortSignal.timeout(15000),
       })
+
+      console.log("Backend response status:", response.status)
 
       if (!response.ok) {
         throw new Error(`Failed to fetch videos: ${response.status} ${response.statusText}`)
@@ -193,7 +255,7 @@ export default function ExplorePage() {
 
           console.log("Final processed videos:", processedVideos)
           setVideos(processedVideos)
-          setCurrentIndex(0) 
+          setCurrentIndex(0)
           setHasSearched(true)
           return
         } else {
@@ -227,6 +289,19 @@ export default function ExplorePage() {
         setVideos([...customFallbacks, ...disneyVideos])
         setCurrentIndex(0) // Reset to first video
         setError(`Using ${category} videos with Disney content`)
+      } else if (themeValue && categoryFallbacks[themeValue.toLowerCase()]) {
+        // Use theme-specific fallbacks if available
+        const themeUrl = categoryFallbacks[themeValue.toLowerCase()]
+        const themeFallbacks = Array.from({ length: 5 }).map((_, index) => ({
+          ...fallbackVideos[index % fallbackVideos.length],
+          url: themeUrl,
+          video_id: `${themeValue.toLowerCase()}-${index + 1}`,
+          uniqueId: `${themeValue.toLowerCase()}-${index + 1}-${Date.now()}`,
+        }))
+
+        setVideos(themeFallbacks)
+        setCurrentIndex(0)
+        setError(`Using ${themeValue} themed videos`)
       } else {
         // Use Disney videos as fallbacks
         const uniqueFallbacks = fallbackVideos.map((video, index) => ({
@@ -259,6 +334,13 @@ export default function ExplorePage() {
       query = "recommended videos"
     }
 
+    // Store the original query without any theme/mood enhancements
+    setCurrentQuery(query)
+
+    // Reset theme and mood when doing a new search
+    setTheme("")
+    setMood("")
+
     fetchVideos(query)
     setShowRecommendationForm(false)
   }
@@ -275,7 +357,7 @@ export default function ExplorePage() {
     }
   }
 
-  // Touch handlers for swipe gestures - improved sensitivity
+  // Touch handlers for swipe gestures
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartY.current = e.touches[0].clientY
   }
@@ -286,13 +368,10 @@ export default function ExplorePage() {
     const touchEndY = e.changedTouches[0].clientY
     const deltaY = touchEndY - touchStartY.current
 
-    // Reduced threshold for more sensitive swiping (30px instead of 50px)
     if (Math.abs(deltaY) > 30) {
       if (deltaY < 0) {
-        // Swipe up - go to next video
         handleNext()
       } else {
-        // Swipe down - go to previous video
         handlePrevious()
       }
     }
@@ -319,22 +398,48 @@ export default function ExplorePage() {
 
   // Reset recommendation form
   const resetSearch = () => {
+    console.log("Resetting search and showing form")
     setShowRecommendationForm(true)
     setHasSearched(false)
     setVideos([])
     setCurrentIndex(0)
+    setTheme("")
+    setMood("")
+    setCurrentQuery("")
+    setSearchQuery("")
+    setCategory("")
   }
 
-  // Handle style change from drawer
-  const handleStyleChange = () => {
+  // Update the handleStyleChange function to handle the showSearchForm flag
+  const handleStyleChange = (newTheme?: string, newMood?: string, showSearchForm?: boolean) => {
+    console.log("Style change requested:", { newTheme, newMood, showSearchForm })
+
+    // If showSearchForm is true, reset to search form
+    if (showSearchForm) {
+      resetSearch()
+      return
+    }
+
+    // Update theme and mood if provided
+    const updatedTheme = newTheme !== undefined ? newTheme : theme
+    const updatedMood = newMood !== undefined ? newMood : mood
+
+    setTheme(updatedTheme)
+    setMood(updatedMood)
+
     // Close the drawer
     setIsDrawerOpen(false)
 
-    // If we have a current query, fetch new videos with it
+    // If we have a current query, fetch new videos with it and the new preferences
     if (currentQuery) {
-      fetchVideos(currentQuery)
+      console.log("Fetching new videos with updated preferences:", {
+        query: currentQuery,
+        theme: updatedTheme,
+        mood: updatedMood,
+      })
+      fetchVideos(currentQuery, updatedTheme, updatedMood)
     } else {
-      // Otherwise, reset to the form
+      // If no current query, reset to the form
       resetSearch()
     }
   }
@@ -363,15 +468,16 @@ export default function ExplorePage() {
                     <SelectValue placeholder="Choose a category" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="sports">Sports</SelectItem>
-                    <SelectItem value="music">Music</SelectItem>
-                    <SelectItem value="travel">Travel</SelectItem>
-                    <SelectItem value="food">Food</SelectItem>
-                    <SelectItem value="fashion">Fashion</SelectItem>
-                    <SelectItem value="technology">Technology</SelectItem>
-                    <SelectItem value="education">Education</SelectItem>
                     <SelectItem value="animation">Animation</SelectItem>
+                    <SelectItem value="pixar">Pixar</SelectItem>
+                    <SelectItem value="disney">Disney</SelectItem>
+                    <SelectItem value="dreamworks">DreamWorks</SelectItem>
+                    <SelectItem value="anime">Anime</SelectItem>
+                    <SelectItem value="cartoon">Cartoon</SelectItem>
                     <SelectItem value="kids">Kids</SelectItem>
+                    <SelectItem value="family">Family</SelectItem>
+                    <SelectItem value="adventure">Adventure</SelectItem>
+                    <SelectItem value="comedy">Comedy</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -422,6 +528,17 @@ export default function ExplorePage() {
                   <span className="text-sm font-medium">{videos.length}</span>
                 </div>
               </div>
+
+              {/* Current preferences indicator */}
+              {(theme || mood) && (
+                <div className="absolute top-0 right-4 transform -translate-y-12 z-10 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-md">
+                  <div className="flex items-center gap-2 text-xs text-gray-700">
+                    {theme && <span>Theme: {theme}</span>}
+                    {theme && mood && <span>•</span>}
+                    {mood && <span>Mood: {mood}</span>}
+                  </div>
+                </div>
+              )}
 
               {/* Portrait video container with fixed aspect ratio */}
               <div
@@ -475,8 +592,8 @@ export default function ExplorePage() {
               </div>
             </div>
 
-            {/* Change Suggestion button - fixed at bottom center */}
-            <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
+            {/* Change Preferences button - MOVED TO LEFT */}
+            <div className="fixed bottom-6 left-6 z-50">
               <Button
                 variant="default"
                 className="bg-[#00E21B] text-black hover:bg-[#00E21B]/90 shadow-md"
@@ -489,7 +606,12 @@ export default function ExplorePage() {
 
             {/* Style selector drawer */}
             <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-              <StyleSelector onClose={() => setIsDrawerOpen(false)} onChangePreferences={handleStyleChange} />
+              <StyleSelector
+                onClose={() => setIsDrawerOpen(false)}
+                onChangePreferences={handleStyleChange}
+                initialTheme={theme}
+                initialMood={mood}
+              />
             </Drawer>
           </>
         ) : hasSearched ? (

@@ -218,6 +218,7 @@ def search():
         
         # Generate embedding for the search query
         embedding_response = None
+        logger.info(f"Processing search query: {query}")
         try:
             logger.debug(f"Generating embedding for query: {query}")
             embedding_response = client.embed.create(
