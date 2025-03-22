@@ -215,6 +215,8 @@ def search():
             }), 400
             
         logger.info(f"Processing search query: {query}")
+
+        query = f"Provide the relevant content of the genre and the mood of - {query}"
         
         # Generate embedding for the search query
         embedding_response = None

@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect, useRef } from "react"
 import { Drawer } from "@/components/ui/drawer"
 import { Button } from "@/components/ui/button"
@@ -9,8 +8,9 @@ import { Settings, Search, ArrowUp, ArrowDown } from "lucide-react"
 import VideoPlayer from "@/components/video-player"
 import StyleSelector from "@/components/style-selector"
 import Navbar from "@/components/navbar"
-import Image from "next/image"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { cn } from "@/lib/utils"
+import Image from "next/image"
 
 const fallbackVideos = [
   {
@@ -141,6 +141,8 @@ export default function ExplorePage() {
   const videoContainerRef = useRef<HTMLDivElement>(null)
   const touchStartY = useRef<number | null>(null)
   const [useFallback, setUseFallback] = useState(true)
+  const [swipeDirection, setSwipeDirection] = useState<"none" | "up" | "down">("none")
+  const [isTransitioning, setIsTransitioning] = useState(false)
 
   const [showRecommendationForm, setShowRecommendationForm] = useState(true)
   const [category, setCategory] = useState("")
@@ -152,6 +154,8 @@ export default function ExplorePage() {
   const [theme, setTheme] = useState("")
   const [mood, setMood] = useState("")
 
+  const [isVideoPlaying, setIsVideoPlaying] = useState(true)
+
   // Debug logging for API calls
   const logApiCall = (method: string, url: string, body: any) => {
     console.log(`API ${method} to ${url}:`, body)
@@ -159,36 +163,29 @@ export default function ExplorePage() {
 
   // Create a fresh search query based on the base query and preferences
   const createSearchQuery = (baseQuery: string, themeValue?: string, moodValue?: string) => {
-    // Start with just the base query - no additional terms
+    // Start with just the base query
     let finalQuery = baseQuery.trim()
 
-    // Create an array of additional terms
-    const additionalTerms = []
+    // For theme/mood searches, we'll create a completely new query
+    // rather than appending to avoid query getting too long
+    if (themeValue || moodValue) {
+      const parts = []
 
-    // Add theme if provided
-    if (themeValue) {
-      additionalTerms.push(themeValue)
-    }
+      // Add the base query
+      parts.push(finalQuery)
 
-    // Add mood if provided
-    if (moodValue) {
-      additionalTerms.push(moodValue)
-    }
+      // Add theme if provided
+      if (themeValue) {
+        parts.push(themeValue)
+      }
 
-    // Add context-specific terms based on the base query
-    // if (baseQuery.toLowerCase().includes("disney")) {
-    //   additionalTerms.push("magical family-friendly animation")
-    // } else if (baseQuery.toLowerCase().includes("pixar")) {
-    //   additionalTerms.push("animated story")
-    // } else if (baseQuery.toLowerCase().includes("adventure")) {
-    //   additionalTerms.push("exciting journey")
-    // } else if (baseQuery.toLowerCase().includes("comedy")) {
-    //   additionalTerms.push("funny humorous")
-    // }
+      // Add mood if provided
+      if (moodValue) {
+        parts.push(moodValue)
+      }
 
-    // If we have additional terms, add them to the query
-    if (additionalTerms.length > 0) {
-      finalQuery += " " + additionalTerms.join(" ")
+      // Join with spaces to create a clean query
+      finalQuery = parts.join(" ")
     }
 
     console.log("Created fresh search query:", finalQuery)
@@ -346,20 +343,58 @@ export default function ExplorePage() {
   }
 
   const handleNext = () => {
-    if (currentIndex < videos.length - 1) {
-      setCurrentIndex(currentIndex + 1)
+    if (currentIndex < videos.length - 1 && !isTransitioning) {
+      setIsTransitioning(true)
+      setSwipeDirection("up")
+
+      setTimeout(() => {
+        setCurrentIndex(currentIndex + 1)
+        setSwipeDirection("none")
+        setTimeout(() => {
+          setIsTransitioning(false)
+        }, 50)
+      }, 300)
     }
   }
 
   const handlePrevious = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1)
+    if (currentIndex > 0 && !isTransitioning) {
+      setIsTransitioning(true)
+      setSwipeDirection("down")
+
+      setTimeout(() => {
+        setCurrentIndex(currentIndex - 1)
+        setSwipeDirection("none")
+        setTimeout(() => {
+          setIsTransitioning(false)
+        }, 50)
+      }, 300)
     }
   }
 
-  // Touch handlers for swipe gestures
+  // Touch handlers for swipe gestures - improved for better detection
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartY.current = e.touches[0].clientY
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartY.current === null || isTransitioning) return
+
+    const touchY = e.touches[0].clientY
+    const deltaY = touchY - touchStartY.current
+
+    // Show visual feedback during swipe
+    if (Math.abs(deltaY) > 20) {
+      if (deltaY < 0 && currentIndex < videos.length - 1) {
+        setSwipeDirection("up")
+      } else if (deltaY > 0 && currentIndex > 0) {
+        setSwipeDirection("down")
+      }
+    }
+  }
+
+  const toggleVideoPlayback = () => {
+    setIsVideoPlaying(!isVideoPlaying)
   }
 
   const handleTouchEnd = (e: React.TouchEvent) => {
@@ -371,8 +406,12 @@ export default function ExplorePage() {
     if (Math.abs(deltaY) > 30) {
       if (deltaY < 0) {
         handleNext()
+        // Reset video playing state when changing videos
+        setIsVideoPlaying(true)
       } else {
         handlePrevious()
+        // Reset video playing state when changing videos
+        setIsVideoPlaying(true)
       }
     }
 
@@ -384,8 +423,10 @@ export default function ExplorePage() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowUp") {
         handlePrevious()
+        setIsVideoPlaying(true)
       } else if (e.key === "ArrowDown") {
         handleNext()
+        setIsVideoPlaying(true)
       }
     }
 
@@ -431,9 +472,10 @@ export default function ExplorePage() {
     setIsDrawerOpen(false)
 
     // If we have a current query, fetch new videos with it and the new preferences
+    // But make sure we're using the original query without previous enhancements
     if (currentQuery) {
       console.log("Fetching new videos with updated preferences:", {
-        query: currentQuery,
+        query: currentQuery, // Use the original query
         theme: updatedTheme,
         mood: updatedMood,
       })
@@ -447,8 +489,9 @@ export default function ExplorePage() {
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center relative bg-[#F4F3F3] overflow-hidden">
       {/* Background image */}
-      <div className="absolute inset-0">
-        <Image src="/background.png" alt="Background" fill className="object-cover" priority />
+      <div className="absolute inset-0 z-0">
+        <Image src="/background.png" alt="Background" fill priority className="object-cover opacity-50" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#F4F3F3]/80 via-[#F8F8F7]/60 to-[#F4F3F3]/80"></div>
       </div>
 
       {/* Navbar */}
@@ -543,7 +586,11 @@ export default function ExplorePage() {
               {/* Portrait video container with fixed aspect ratio */}
               <div
                 ref={videoContainerRef}
-                className="relative mx-auto rounded-2xl overflow-hidden shadow-xl"
+                className={cn(
+                  "relative mx-auto rounded-2xl overflow-hidden shadow-xl transition-all duration-300",
+                  swipeDirection === "up" && "transform -translate-y-8 scale-95 opacity-90",
+                  swipeDirection === "down" && "transform translate-y-8 scale-95 opacity-90",
+                )}
                 style={{
                   width: "100%",
                   maxWidth: "400px",
@@ -552,16 +599,19 @@ export default function ExplorePage() {
                   aspectRatio: "9/16",
                 }}
                 onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
               >
                 {currentVideo && (
-                  <VideoPlayer
-                    key={`video-${currentIndex}-${currentVideo.uniqueId || Date.now()}-${Math.random().toString(36).substring(2, 9)}`}
-                    videoId={currentVideo.video_id || "fallback-1"}
-                    startTime={currentVideo.start_time || 0}
-                    fallbackUrl={useFallback ? currentVideo.url : undefined}
-                    autoPlay={true}
-                  />
+                  <div onClick={toggleVideoPlayback}>
+                    <VideoPlayer
+                      key={`video-${currentIndex}-${currentVideo.uniqueId || Date.now()}-${Math.random().toString(36).substring(2, 9)}`}
+                      videoId={currentVideo.video_id || "fallback-1"}
+                      startTime={currentVideo.start_time || 0}
+                      fallbackUrl={useFallback ? currentVideo.url : undefined}
+                      autoPlay={isVideoPlaying}
+                    />
+                  </div>
                 )}
 
                 {/* Large swipe areas for easier navigation */}
@@ -601,6 +651,18 @@ export default function ExplorePage() {
               >
                 <Settings className="mr-2 h-4 w-4" />
                 Change Preferences
+              </Button>
+            </div>
+
+            {/* New Search button - ADDED TO RIGHT */}
+            <div className="fixed bottom-6 right-6 z-50">
+              <Button
+                variant="outline"
+                className="bg-white text-gray-800 hover:bg-gray-50 shadow-md"
+                onClick={resetSearch}
+              >
+                <Search className="mr-2 h-4 w-4" />
+                New Search
               </Button>
             </div>
 

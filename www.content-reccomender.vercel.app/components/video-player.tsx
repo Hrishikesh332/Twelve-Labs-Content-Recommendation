@@ -56,7 +56,7 @@ export default function VideoPlayer({ videoId, startTime = 0, fallbackUrl, autoP
   const [loadAttempt, setLoadAttempt] = useState(0)
   const [userInteracted, setUserInteracted] = useState(autoPlay) // Set to true if autoPlay is enabled
   const [isLoading, setIsLoading] = useState(true)
-  const [isMuted, setIsMuted] = useState(true)
+  const [isMuted, setIsMuted] = useState(false) // Changed from true to false - audio on by default
 
   // Debug the component rendering
   console.log("VideoPlayer rendering:", { videoId, fallbackUrl, autoPlay })
@@ -70,11 +70,26 @@ export default function VideoPlayer({ videoId, startTime = 0, fallbackUrl, autoP
 
     console.log("VideoPlayer: Setting up video for ID:", videoId, "with fallback:", fallbackUrl)
 
+    // Process the fallback URL if provided
+    let processedUrl = fallbackUrl
+    if (processedUrl) {
+      try {
+        // Try to decode and then properly encode the URL
+        processedUrl = decodeURIComponent(processedUrl)
+        const urlObj = new URL(processedUrl)
+        processedUrl = urlObj.toString()
+        console.log("Processed URL:", processedUrl)
+      } catch (e) {
+        console.error("Error processing fallback URL:", e)
+        // If URL processing fails, keep the original
+      }
+    }
+
     // Always use fallback URLs to avoid backend errors
-    if (fallbackUrl) {
+    if (processedUrl) {
       // If a direct fallback URL is provided, use it
-      setVideoSrc(fallbackUrl)
-      console.log("Using provided fallback URL:", fallbackUrl)
+      setVideoSrc(processedUrl)
+      console.log("Using provided fallback URL:", processedUrl)
     } else if (fallbackVideos[videoId]) {
       // If we have a specific fallback for this video ID, use it
       setVideoSrc(fallbackVideos[videoId])
@@ -111,7 +126,7 @@ export default function VideoPlayer({ videoId, startTime = 0, fallbackUrl, autoP
 
   // Try to autoplay as soon as video source is set
   useEffect(() => {
-    if (videoSrc && videoRef.current && !isLoading) {
+    if (videoSrc && videoRef.current && !isLoading && autoPlay) {
       console.log("Attempting to autoplay video:", videoSrc)
 
       // Auto-play the video after a short delay
@@ -143,8 +158,12 @@ export default function VideoPlayer({ videoId, startTime = 0, fallbackUrl, autoP
       }, 300)
 
       return () => clearTimeout(playTimer)
+    } else if (videoSrc && videoRef.current && !isLoading && !autoPlay) {
+      // If autoPlay is false, pause the video
+      videoRef.current.pause()
+      setIsPlaying(false)
     }
-  }, [videoSrc, isLoading, isMuted])
+  }, [videoSrc, isLoading, isMuted, autoPlay])
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -280,7 +299,10 @@ export default function VideoPlayer({ videoId, startTime = 0, fallbackUrl, autoP
             </Button>
           </div>
 
-          {/* Removed the autoplay notice overlay */}
+          {/* Add a notice about audio being on by default */}
+          <div className="absolute top-4 left-4 z-20 bg-black/50 text-white text-xs px-2 py-1 rounded-md opacity-70">
+            Audio On
+          </div>
         </>
       )}
     </div>
