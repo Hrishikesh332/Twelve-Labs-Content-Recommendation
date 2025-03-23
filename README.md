@@ -20,12 +20,68 @@ Content Recommendation is an open source platform that makes use of vector simil
 
 1. Video Content are processed and converted into vector embeddings
 2. Embeddings are stored in Qdrant vector database
-4. Qdrant performs efficient similarity search to find relevant content
-5. Top matches are returned as personalized recommendations
+3. Qdrant performs efficient similarity search to find relevant content
+4. Top matches are returned as personalized recommendations
 
-## Core Working Architecture
+## Core Workflow Architecture
 
-- The diagram will be added soon
+![Core Workflow Architecture](https://github.com/Hrishikesh332/Twelve-Labs-Content-Recommendation/blob/master/backend-api/src/Content%20Reccomendation%20Core%20Architecture.png)
+
+
+## File Strcuture
+
+```
+├── backend-api
+    ├── .gitignore
+    ├── app.py
+    ├── notebooks
+    │   └── Video_Content_Embedding_Creation_and_Qdrant.ipynb
+    ├── requirements.txt
+    └── src
+    │   └── Content Reccomendation Core Architecture.png
+└── www.content-reccomender.vercel.app
+    ├── .gitignore
+    ├── README.md
+    ├── app
+        ├── explore
+        │   ├── background.png
+        │   ├── loading.tsx
+        │   └── page.tsx
+        ├── favicon.ico
+        ├── global.css
+        ├── globals.css
+        ├── layout.tsx
+        └── page.tsx
+    ├── components.json
+    ├── components
+        ├── navbar.tsx
+        ├── optimized-video-grid.tsx
+        ├── style-selector.tsx
+        ├── ui
+        │   ├── button.tsx
+        │   ├── drawer.tsx
+        │   ├── input.tsx
+        │   └── select.tsx
+        ├── video-grid.tsx
+        └── video-player.tsx
+    ├── eslint.config.mjs
+    ├── lib
+        ├── api.ts
+        └── utils.ts
+    ├── next.config.ts
+    ├── package-lock.json
+    ├── package.json
+    ├── postcss.config.mjs
+    ├── public
+        ├── file.svg
+        ├── globe.svg
+        ├── next.svg
+        ├── vercel.svg
+        └── window.svg
+    ├── tailwind.config.ts
+    └── tsconfig.json
+├── README.md
+```
 
 ## API Key Setup
 
