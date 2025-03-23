@@ -40,7 +40,7 @@ const fallbackVideos: Record<string, string> = {
   mickey:
     "https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos-embed/365d8546-568f-4682-b336-17be6f4cdd2e_097_🎁 Bob Cratchit's Best Christmas Gift Yet!  ｜ Mickey's Christmas Carol ｜ Disney Kids_PTpP-TSCkRg.mp4",
 
-  // Existing mappings
+
   "31999f85-9025-4939-a362-e498b76608fc_PCA_1.mp4":
     "https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos/flow+1.mp4",
   "mock-1":
@@ -57,7 +57,7 @@ export default function VideoPlayer({ videoId, startTime = 0, fallbackUrl, autoP
   const [loadAttempt, setLoadAttempt] = useState(0)
   const [userInteracted, setUserInteracted] = useState(autoPlay) // Set to true if autoPlay is enabled
   const [isLoading, setIsLoading] = useState(true)
-  const [isMuted, setIsMuted] = useState(false) // Changed from true to false - audio on by default
+  const [isMuted, setIsMuted] = useState(false) //  audio on by default
   const [showControls, setShowControls] = useState(true)
 
   // Debug the component rendering
@@ -87,18 +87,15 @@ export default function VideoPlayer({ videoId, startTime = 0, fallbackUrl, autoP
     let processedUrl = fallbackUrl
     if (processedUrl) {
       try {
-        // Try to decode and then properly encode the URL
         processedUrl = decodeURIComponent(processedUrl)
         const urlObj = new URL(processedUrl)
         processedUrl = urlObj.toString()
         console.log("Processed URL:", processedUrl)
       } catch (e) {
         console.error("Error processing fallback URL:", e)
-        // If URL processing fails, keep the original
       }
     }
 
-    // Always use fallback URLs to avoid backend errors
     if (processedUrl) {
       // If a direct fallback URL is provided, use it
       setVideoSrc(processedUrl)
@@ -124,7 +121,6 @@ export default function VideoPlayer({ videoId, startTime = 0, fallbackUrl, autoP
       console.log("Using random Disney fallback video:", randomFallback)
     }
 
-    // If we have a video element, set its current time
     if (videoRef.current) {
       videoRef.current.currentTime = startTime
     }
@@ -142,7 +138,6 @@ export default function VideoPlayer({ videoId, startTime = 0, fallbackUrl, autoP
     if (videoSrc && videoRef.current && !isLoading && autoPlay) {
       console.log("Attempting to autoplay video:", videoSrc)
 
-      // Auto-play the video after a short delay
       const playTimer = setTimeout(() => {
         if (videoRef.current) {
           const playPromise = videoRef.current.play()
@@ -186,7 +181,6 @@ export default function VideoPlayer({ videoId, startTime = 0, fallbackUrl, autoP
       }
     }
 
-    // Listen for document-wide user interaction to enable autoplay
     const handleUserInteraction = () => {
       setUserInteracted(true)
       // Try to play the video if it's not already playing
@@ -220,7 +214,6 @@ export default function VideoPlayer({ videoId, startTime = 0, fallbackUrl, autoP
       } else {
         videoRef.current.play().catch((err) => {
           console.error("Error playing video:", err)
-          // If autoplay is blocked, show a message or handle gracefully
         })
         setIsPlaying(true)
       }
@@ -241,7 +234,6 @@ export default function VideoPlayer({ videoId, startTime = 0, fallbackUrl, autoP
     console.error(`Video failed to load: ${videoSrc}. Attempt: ${loadAttempt + 1}`)
     setVideoError(true)
 
-    // Try a different fallback from our Disney set
     const disneyKeys = Object.keys(fallbackVideos).filter(
       (key) =>
         key !== "fallback-1" &&
@@ -253,7 +245,6 @@ export default function VideoPlayer({ videoId, startTime = 0, fallbackUrl, autoP
         key !== "mock-2",
     )
 
-    // Make sure we don't use the same fallback that just failed
     const nextFallbackIndex = (loadAttempt + 1) % disneyKeys.length
     const nextFallback = fallbackVideos[disneyKeys[nextFallbackIndex]]
 
@@ -261,7 +252,6 @@ export default function VideoPlayer({ videoId, startTime = 0, fallbackUrl, autoP
     setVideoSrc(nextFallback)
     setLoadAttempt((prev) => prev + 1)
 
-    // If we've tried too many times, force a reliable fallback
     if (loadAttempt > 3) {
       // Use Buzz video as the most reliable fallback
       const reliableFallback = fallbackVideos["buzz"]
@@ -289,7 +279,7 @@ export default function VideoPlayer({ videoId, startTime = 0, fallbackUrl, autoP
               className="h-full w-full object-cover"
               playsInline
               loop
-              muted={isMuted} // Now controlled by state
+              muted={isMuted}
               onClick={togglePlay}
               onPlay={() => setIsPlaying(true)}
               onPause={() => setIsPlaying(false)}
@@ -343,7 +333,6 @@ export default function VideoPlayer({ videoId, startTime = 0, fallbackUrl, autoP
             </button>
           </div>
 
-          {/* Bottom controls bar with gradient background */}
           <div
             className={`absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent transition-opacity duration-300 z-20 ${
               showControls ? "opacity-100" : "opacity-0"
@@ -372,7 +361,6 @@ export default function VideoPlayer({ videoId, startTime = 0, fallbackUrl, autoP
                 )}
               </button>
 
-              {/* Alternative mute button at bottom */}
               <button
                 onClick={toggleMute}
                 className="bg-white/90 text-black rounded-full p-2 shadow-lg flex items-center gap-2"

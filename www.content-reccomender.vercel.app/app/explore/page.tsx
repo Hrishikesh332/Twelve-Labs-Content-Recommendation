@@ -105,7 +105,7 @@ const fallbackVideos = [
   },
 ]
 
-// Map of video categories to fallback videos - updated with Disney content
+// Map of video categories to fallback videos with Disney content
 const categoryFallbacks = {
   music:
     "https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos-embed/919c946b-5dd2-49b5-b100-d4e5d136d85d_006_🧼 Wash Your Hands Song! ｜ Doc McStuffins ｜ Disney Kids_pboMdDuCJFQ.mp4",
@@ -123,7 +123,6 @@ const categoryFallbacks = {
   kids: "https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos-embed/365d8546-568f-4682-b336-17be6f4cdd2e_097_🎁 Bob Cratchit's Best Christmas Gift Yet!  ｜ Mickey's Christmas Carol ｜ Disney Kids_PTpP-TSCkRg.mp4",
   winter:
     "https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos-embed/1203fb1a-ef99-4cc0-a212-8bf1589216ea_044_🗻 Frozen Quest： Can Anna Stop Winter？ ｜ Frozen ｜ Disney Kids_UrrHl9p2XDM.mp4",
-  // Add animation-specific categories
   pixar:
     "https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos-embed/08ff403a-63e7-4188-9eed-3858f4457173_078_🧑‍🍳 Experimenting With Flavors! ｜ Ratatouille ｜ Disney Kids_pwpRSNCdr6w.mp4",
   disney:
@@ -161,9 +160,7 @@ export default function ExplorePage() {
     console.log(`API ${method} to ${url}:`, body)
   }
 
-  // Create a fresh search query based on the base query and preferences
   const createSearchQuery = (baseQuery: string, themeValue?: string, moodValue?: string) => {
-    // Start with just the base query
     let finalQuery = baseQuery.trim()
 
     // For theme/mood searches, we'll create a completely new query
@@ -171,20 +168,16 @@ export default function ExplorePage() {
     if (themeValue || moodValue) {
       const parts = []
 
-      // Add the base query
       parts.push(finalQuery)
 
-      // Add theme if provided
+
       if (themeValue) {
         parts.push(themeValue)
       }
-
-      // Add mood if provided
       if (moodValue) {
         parts.push(moodValue)
       }
 
-      // Join with spaces to create a clean query
       finalQuery = parts.join(" ")
     }
 
@@ -192,7 +185,6 @@ export default function ExplorePage() {
     return finalQuery
   }
 
-  // Update the fetchVideos function to use the new createSearchQuery function
   const fetchVideos = async (query: string, themeValue?: string, moodValue?: string) => {
     setIsLoading(true)
     setError(null)
@@ -205,11 +197,11 @@ export default function ExplorePage() {
 
       console.log("Fetching videos with query:", freshQuery)
 
-      // Log the API call we're about to make
+      // Log the API call
       const requestBody = { query: freshQuery }
       logApiCall("POST", "http://localhost:5000/search", requestBody)
 
-      // Try to fetch from backend
+      // fetch from backend
       const response = await fetch("http://localhost:5000/search", {
         method: "POST",
         headers: {
@@ -262,12 +254,11 @@ export default function ExplorePage() {
         console.warn("No array or empty array returned from backend")
       }
 
-      // If we get here, we didn't get valid videos from the API
+
       throw new Error("No valid videos returned from the API")
     } catch (error: any) {
       console.error("Using fallback videos due to error:", error)
 
-      // Create category-specific fallbacks if a category is selected
       if (category && categoryFallbacks[category.toLowerCase()]) {
         const categoryUrl = categoryFallbacks[category.toLowerCase()]
         const customFallbacks = Array.from({ length: 5 }).map((_, index) => ({
@@ -277,17 +268,15 @@ export default function ExplorePage() {
           uniqueId: `${category.toLowerCase()}-${index + 1}-${Date.now()}`,
         }))
 
-        // Always include a few Disney videos for variety
         const disneyVideos = fallbackVideos.slice(0, 3).map((video, index) => ({
           ...video,
           uniqueId: `disney-${index}-${Date.now()}`,
         }))
 
         setVideos([...customFallbacks, ...disneyVideos])
-        setCurrentIndex(0) // Reset to first video
+        setCurrentIndex(0) 
         setError(`Using ${category} videos with Disney content`)
       } else if (themeValue && categoryFallbacks[themeValue.toLowerCase()]) {
-        // Use theme-specific fallbacks if available
         const themeUrl = categoryFallbacks[themeValue.toLowerCase()]
         const themeFallbacks = Array.from({ length: 5 }).map((_, index) => ({
           ...fallbackVideos[index % fallbackVideos.length],
@@ -300,14 +289,13 @@ export default function ExplorePage() {
         setCurrentIndex(0)
         setError(`Using ${themeValue} themed videos`)
       } else {
-        // Use Disney videos as fallbacks
         const uniqueFallbacks = fallbackVideos.map((video, index) => ({
           ...video,
           uniqueId: `disney-${index}-${Date.now()}`,
         }))
 
         setVideos(uniqueFallbacks)
-        setCurrentIndex(0) // Reset to first video
+        setCurrentIndex(0)
         setError(`Using Disney videos as fallbacks`)
       }
 
@@ -372,7 +360,7 @@ export default function ExplorePage() {
     }
   }
 
-  // Touch handlers for swipe gestures - improved for better detection
+
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartY.current = e.touches[0].clientY
   }
@@ -383,7 +371,6 @@ export default function ExplorePage() {
     const touchY = e.touches[0].clientY
     const deltaY = touchY - touchStartY.current
 
-    // Show visual feedback during swipe
     if (Math.abs(deltaY) > 20) {
       if (deltaY < 0 && currentIndex < videos.length - 1) {
         setSwipeDirection("up")
@@ -406,11 +393,9 @@ export default function ExplorePage() {
     if (Math.abs(deltaY) > 30) {
       if (deltaY < 0) {
         handleNext()
-        // Reset video playing state when changing videos
         setIsVideoPlaying(true)
       } else {
         handlePrevious()
-        // Reset video playing state when changing videos
         setIsVideoPlaying(true)
       }
     }
@@ -434,7 +419,6 @@ export default function ExplorePage() {
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [currentIndex, videos.length])
 
-  // Get current video with fallback
   const currentVideo = videos.length > 0 ? videos[currentIndex] : null
 
   // Reset recommendation form
@@ -451,7 +435,7 @@ export default function ExplorePage() {
     setCategory("")
   }
 
-  // Update the handleStyleChange function to handle the showSearchForm flag
+
   const handleStyleChange = (newTheme?: string, newMood?: string, showSearchForm?: boolean) => {
     console.log("Style change requested:", { newTheme, newMood, showSearchForm })
 
@@ -461,7 +445,6 @@ export default function ExplorePage() {
       return
     }
 
-    // Update theme and mood if provided
     const updatedTheme = newTheme !== undefined ? newTheme : theme
     const updatedMood = newMood !== undefined ? newMood : mood
 
@@ -471,17 +454,14 @@ export default function ExplorePage() {
     // Close the drawer
     setIsDrawerOpen(false)
 
-    // If we have a current query, fetch new videos with it and the new preferences
-    // But make sure we're using the original query without previous enhancements
     if (currentQuery) {
       console.log("Fetching new videos with updated preferences:", {
-        query: currentQuery, // Use the original query
+        query: currentQuery, 
         theme: updatedTheme,
         mood: updatedMood,
       })
       fetchVideos(currentQuery, updatedTheme, updatedMood)
     } else {
-      // If no current query, reset to the form
       resetSearch()
     }
   }
@@ -556,7 +536,6 @@ export default function ExplorePage() {
           </div>
         ) : hasSearched && videos.length > 0 ? (
           <>
-            {/* Main content layout with portrait video container - centered */}
             <div className="relative w-full max-w-md mx-auto flex flex-col items-center justify-center">
               {/* Swipe instruction - now above the video */}
               <div className="mb-4 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-md">
@@ -572,7 +551,6 @@ export default function ExplorePage() {
                 </div>
               </div>
 
-              {/* Current preferences indicator */}
               {(theme || mood) && (
                 <div className="absolute top-0 right-4 transform -translate-y-12 z-10 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-md">
                   <div className="flex items-center gap-2 text-xs text-gray-700">
@@ -583,7 +561,6 @@ export default function ExplorePage() {
                 </div>
               )}
 
-              {/* Portrait video container with fixed aspect ratio */}
               <div
                 ref={videoContainerRef}
                 className={cn(
@@ -614,11 +591,9 @@ export default function ExplorePage() {
                   </div>
                 )}
 
-                {/* Large swipe areas for easier navigation */}
                 <div className="absolute top-0 left-0 right-0 h-1/2 z-10 opacity-0" onClick={handlePrevious} />
                 <div className="absolute bottom-0 left-0 right-0 h-1/2 z-10 opacity-0" onClick={handleNext} />
 
-                {/* Navigation buttons - centered at bottom */}
                 <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex gap-4 z-20">
                   <Button
                     variant="outline"
@@ -642,7 +617,6 @@ export default function ExplorePage() {
               </div>
             </div>
 
-            {/* Change Preferences button - MOVED TO LEFT */}
             <div className="fixed bottom-6 left-6 z-50">
               <Button
                 variant="default"
@@ -654,7 +628,6 @@ export default function ExplorePage() {
               </Button>
             </div>
 
-            {/* New Search button - ADDED TO RIGHT */}
             <div className="fixed bottom-6 right-6 z-50">
               <Button
                 variant="outline"
@@ -666,7 +639,6 @@ export default function ExplorePage() {
               </Button>
             </div>
 
-            {/* Style selector drawer */}
             <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
               <StyleSelector
                 onClose={() => setIsDrawerOpen(false)}
