@@ -1,8 +1,9 @@
 "use client"
 
+import type React from "react"
+
 import { useEffect, useRef, useState } from "react"
 import { Play, Volume2, VolumeX } from "lucide-react"
-import { Button } from "@/components/ui/button"
 
 interface VideoPlayerProps {
   videoId: string
@@ -57,9 +58,20 @@ export default function VideoPlayer({ videoId, startTime = 0, fallbackUrl, autoP
   const [userInteracted, setUserInteracted] = useState(autoPlay) // Set to true if autoPlay is enabled
   const [isLoading, setIsLoading] = useState(true)
   const [isMuted, setIsMuted] = useState(false) // Changed from true to false - audio on by default
+  const [showControls, setShowControls] = useState(true)
 
   // Debug the component rendering
   console.log("VideoPlayer rendering:", { videoId, fallbackUrl, autoPlay })
+
+  // Hide controls after a delay
+  useEffect(() => {
+    if (showControls) {
+      const timer = setTimeout(() => {
+        setShowControls(false)
+      }, 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [showControls])
 
   useEffect(() => {
     // Reset states when videoId changes
@@ -67,6 +79,7 @@ export default function VideoPlayer({ videoId, startTime = 0, fallbackUrl, autoP
     setIsPlaying(false)
     setLoadAttempt(0)
     setIsLoading(true)
+    setShowControls(true)
 
     console.log("VideoPlayer: Setting up video for ID:", videoId, "with fallback:", fallbackUrl)
 
@@ -198,6 +211,7 @@ export default function VideoPlayer({ videoId, startTime = 0, fallbackUrl, autoP
   const togglePlay = () => {
     // Mark that user has interacted
     setUserInteracted(true)
+    setShowControls(true)
 
     if (videoRef.current) {
       if (isPlaying) {
@@ -213,10 +227,13 @@ export default function VideoPlayer({ videoId, startTime = 0, fallbackUrl, autoP
     }
   }
 
-  const toggleMute = () => {
+  const toggleMute = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setShowControls(true)
+
     if (videoRef.current) {
       videoRef.current.muted = !videoRef.current.muted
-      setIsMuted(videoRef.current.muted)
+      setIsMuted(!isMuted)
     }
   }
 
@@ -254,7 +271,11 @@ export default function VideoPlayer({ videoId, startTime = 0, fallbackUrl, autoP
   }
 
   return (
-    <div className="relative h-full w-full bg-black rounded-lg overflow-hidden">
+    <div
+      className="relative h-full w-full bg-black rounded-lg overflow-hidden"
+      onMouseMove={() => setShowControls(true)}
+      onTouchStart={() => setShowControls(true)}
+    >
       {isLoading ? (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
           <div className="w-12 h-12 border-4 border-gray-600 border-t-[#00E21B] rounded-full animate-spin" />
@@ -274,7 +295,6 @@ export default function VideoPlayer({ videoId, startTime = 0, fallbackUrl, autoP
               onPause={() => setIsPlaying(false)}
               onError={handleVideoError}
               onCanPlay={() => console.log("Video can play:", videoSrc)}
-              poster="/placeholder.svg?height=720&width=405"
             />
           )}
 
@@ -287,21 +307,79 @@ export default function VideoPlayer({ videoId, startTime = 0, fallbackUrl, autoP
             )}
           </div>
 
-          {/* Mute/Unmute button */}
-          <div className="absolute bottom-4 right-4 z-20">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-full bg-white/70 text-gray-800 hover:bg-white shadow-md"
+          {/* SUPER PROMINENT AUDIO CONTROLS - Always visible at the top */}
+          <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent z-30">
+            {/* Audio status indicator */}
+            <div className="flex items-center gap-2 text-white text-sm font-medium">
+              {isMuted ? (
+                <>
+                  <VolumeX className="h-5 w-5" />
+                  <span>Muted</span>
+                </>
+              ) : (
+                <>
+                  <Volume2 className="h-5 w-5" />
+                  <span>Audio On</span>
+                </>
+              )}
+            </div>
+
+            {/* Large, very visible mute toggle button */}
+            <button
               onClick={toggleMute}
+              className="flex items-center gap-2 bg-white text-black font-medium px-4 py-2 rounded-full shadow-lg hover:bg-gray-200 transition-colors"
             >
-              {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
-            </Button>
+              {isMuted ? (
+                <>
+                  <Volume2 className="h-5 w-5" />
+                  <span>Unmute</span>
+                </>
+              ) : (
+                <>
+                  <VolumeX className="h-5 w-5" />
+                  <span>Mute</span>
+                </>
+              )}
+            </button>
           </div>
 
-          {/* Add a notice about audio being on by default */}
-          <div className="absolute top-4 left-4 z-20 bg-black/50 text-white text-xs px-2 py-1 rounded-md opacity-70">
-            Audio On
+          {/* Bottom controls bar with gradient background */}
+          <div
+            className={`absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent transition-opacity duration-300 z-20 ${
+              showControls ? "opacity-100" : "opacity-0"
+            }`}
+          >
+            <div className="flex justify-between items-center">
+              {/* Play/Pause button */}
+              <button onClick={togglePlay} className="bg-white/90 text-black rounded-full p-2 shadow-lg">
+                {isPlaying ? (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <rect x="6" y="4" width="4" height="16"></rect>
+                    <rect x="14" y="4" width="4" height="16"></rect>
+                  </svg>
+                ) : (
+                  <Play className="h-6 w-6 ml-0.5" />
+                )}
+              </button>
+
+              {/* Alternative mute button at bottom */}
+              <button
+                onClick={toggleMute}
+                className="bg-white/90 text-black rounded-full p-2 shadow-lg flex items-center gap-2"
+              >
+                {isMuted ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
+              </button>
+            </div>
           </div>
         </>
       )}
