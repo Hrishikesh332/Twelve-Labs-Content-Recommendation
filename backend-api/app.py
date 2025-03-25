@@ -16,7 +16,7 @@ from datetime import datetime
 import atexit
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 load_dotenv()
 
