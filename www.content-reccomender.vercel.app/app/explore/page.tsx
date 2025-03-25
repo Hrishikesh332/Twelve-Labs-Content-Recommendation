@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { Drawer } from "@/components/ui/drawer"
 import { Button } from "@/components/ui/button"
 import { Settings, Search, ArrowUp, ArrowDown } from "lucide-react"
@@ -232,7 +232,7 @@ export default function ExplorePage() {
             const videoUrl =
               video.url ||
               fallbackVideos.find((fb) => fb.video_id === video.video_id)?.url ||
-              (category && categoryFallbacks[category.toLowerCase()]) ||
+              (category && categoryFallbacks[category.toLowerCase() as keyof typeof categoryFallbacks]) ||
               fallbackVideos[index % fallbackVideos.length].url
 
             return {
@@ -259,8 +259,8 @@ export default function ExplorePage() {
     } catch (error: any) {
       console.error("Using fallback videos due to error:", error)
 
-      if (category && categoryFallbacks[category.toLowerCase()]) {
-        const categoryUrl = categoryFallbacks[category.toLowerCase()]
+      if (category && categoryFallbacks[category.toLowerCase() as keyof typeof categoryFallbacks]) {
+        const categoryUrl = categoryFallbacks[category.toLowerCase() as keyof typeof categoryFallbacks]
         const customFallbacks = Array.from({ length: 5 }).map((_, index) => ({
           ...fallbackVideos[index % fallbackVideos.length],
           url: categoryUrl,
@@ -276,8 +276,8 @@ export default function ExplorePage() {
         setVideos([...customFallbacks, ...disneyVideos])
         setCurrentIndex(0) 
         setError(`Using ${category} videos with Disney content`)
-      } else if (themeValue && categoryFallbacks[themeValue.toLowerCase()]) {
-        const themeUrl = categoryFallbacks[themeValue.toLowerCase()]
+      } else if (themeValue && !!categoryFallbacks[themeValue.toLowerCase() as keyof typeof categoryFallbacks]) {
+        const themeUrl = categoryFallbacks[themeValue.toLowerCase() as keyof typeof categoryFallbacks] as any
         const themeFallbacks = Array.from({ length: 5 }).map((_, index) => ({
           ...fallbackVideos[index % fallbackVideos.length],
           url: themeUrl,
@@ -330,7 +330,7 @@ export default function ExplorePage() {
     setShowRecommendationForm(false)
   }
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (currentIndex < videos.length - 1 && !isTransitioning) {
       setIsTransitioning(true)
       setSwipeDirection("up")
@@ -343,9 +343,9 @@ export default function ExplorePage() {
         }, 50)
       }, 300)
     }
-  }
+  },[currentIndex,videos,isTransitioning])
 
-  const handlePrevious = () => {
+  const handlePrevious = useCallback(() => {
     if (currentIndex > 0 && !isTransitioning) {
       setIsTransitioning(true)
       setSwipeDirection("down")
@@ -358,7 +358,7 @@ export default function ExplorePage() {
         }, 50)
       }, 300)
     }
-  }
+  },[currentIndex,isTransitioning])
 
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -417,7 +417,7 @@ export default function ExplorePage() {
 
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [currentIndex, videos.length])
+  }, [currentIndex, videos.length, handleNext, handlePrevious])
 
   const currentVideo = videos.length > 0 ? videos[currentIndex] : null
 

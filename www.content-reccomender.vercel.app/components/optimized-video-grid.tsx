@@ -160,7 +160,9 @@ export default function OptimizedVideoGrid({
               onMouseLeave={() => setHoverIndex(null)}
             >
               <video
-                ref={(el) => (videoRefs.current[video.id] = el)}
+                ref={(el) => {
+                  if (el) videoRefs.current[video.id] = el
+                }}
                 src={video.videoSrc}
                 className="absolute inset-0 w-full h-full object-cover"
                 loop

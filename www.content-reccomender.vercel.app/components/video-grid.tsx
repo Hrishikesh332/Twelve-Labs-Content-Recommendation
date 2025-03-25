@@ -3,7 +3,6 @@
 import { useEffect, useState, useRef } from "react"
 import { cn } from "@/lib/utils"
 
-
 const sampleVideos = [
   {
     id: "video-1",
@@ -32,15 +31,13 @@ const sampleVideos = [
   {
     id: "video-5",
     category: "Funny",
-    videoSrc:
-      "https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos/spongebob.mp4",
+    videoSrc: "https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos/spongebob.mp4",
     aspectRatio: "square",
   },
   {
     id: "video-6",
     category: "Monster Inc",
-    videoSrc:
-      "https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos/monster+inc.mp4",
+    videoSrc: "https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos/monster+inc.mp4",
     aspectRatio: "portrait",
   },
   {
@@ -64,8 +61,7 @@ const sampleVideos = [
   {
     id: "video-10",
     category: "Base Story",
-    videoSrc:
-      "https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos/garfield.mp4",
+    videoSrc: "https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos/garfield.mp4",
     aspectRatio: "portrait",
   },
   {
@@ -91,8 +87,7 @@ const sampleVideos = [
   {
     id: "video-14",
     category: "Fish + Suspense",
-    videoSrc:
-      "https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos/nemo.mp4",
+    videoSrc: "https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos/nemo.mp4",
     aspectRatio: "landscape",
   },
   {
@@ -105,15 +100,13 @@ const sampleVideos = [
   {
     id: "video-16",
     category: "Happy + Tiny",
-    videoSrc:
-      "https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos/tiny.mp4",
+    videoSrc: "https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos/tiny.mp4",
     aspectRatio: "landscape",
   },
   {
     id: "video-17",
     category: "Happy",
-    videoSrc:
-      "https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos/tiny.mp4",
+    videoSrc: "https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos/tiny.mp4",
     aspectRatio: "portrait",
   },
   {
@@ -138,8 +131,7 @@ const sampleVideos = [
   {
     id: "video-21",
     category: "Base Story",
-    videoSrc:
-      "https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos/luck.mp4",
+    videoSrc: "https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos/luck.mp4",
     aspectRatio: "landscape",
   },
   {
@@ -241,7 +233,7 @@ export default function VideoGrid() {
 
       return () => clearTimeout(timer)
     }
-  }, [mounted, videoRefs.current])
+  }, [mounted])
 
   if (!mounted) return null
 
@@ -272,7 +264,6 @@ export default function VideoGrid() {
               onMouseLeave={() => setHoverIndex(null)}
             >
               <video
-                ref={(el) => (videoRefs.current[video.id] = el)}
                 src={video.videoSrc}
                 className="absolute inset-0 w-full h-full object-cover"
                 loop
@@ -280,15 +271,16 @@ export default function VideoGrid() {
                 playsInline
                 autoPlay
                 preload="auto"
+                ref={(el) => {
+                  videoRefs.current[video.id] = el
+                }}
               />
 
               {/* Category badge */}
               <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full z-10 shadow-sm">
                 {video.category}
               </div>
-              <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded-md z-10 shadow-sm">
-                {video.duration}
-              </div>
+         
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent opacity-60 z-[1]" />
 
               {/* Video info */}
@@ -298,8 +290,6 @@ export default function VideoGrid() {
                   hoverIndex === video.id ? "translate-y-0" : "translate-y-full",
                 )}
               >
-                <div className="text-white text-xs font-medium line-clamp-2">{video.title}</div>
-                <div className="text-white/70 text-xs mt-1">{video.views}</div>
               </div>
 
               {/* Play button overlay (only on hover) */}

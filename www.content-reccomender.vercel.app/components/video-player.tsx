@@ -52,10 +52,8 @@ const fallbackVideos: Record<string, string> = {
 export default function VideoPlayer({ videoId, startTime = 0, fallbackUrl, autoPlay = false }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [isPlaying, setIsPlaying] = useState(false)
-  const [videoError, setVideoError] = useState(false)
   const [videoSrc, setVideoSrc] = useState<string>("")
   const [loadAttempt, setLoadAttempt] = useState(0)
-  const [userInteracted, setUserInteracted] = useState(autoPlay) // Set to true if autoPlay is enabled
   const [isLoading, setIsLoading] = useState(true)
   const [isMuted, setIsMuted] = useState(false) //  audio on by default
   const [showControls, setShowControls] = useState(true)
@@ -75,7 +73,6 @@ export default function VideoPlayer({ videoId, startTime = 0, fallbackUrl, autoP
 
   useEffect(() => {
     // Reset states when videoId changes
-    setVideoError(false)
     setIsPlaying(false)
     setLoadAttempt(0)
     setIsLoading(true)
@@ -151,14 +148,15 @@ export default function VideoPlayer({ videoId, startTime = 0, fallbackUrl, autoP
               .catch((err) => {
                 console.error("Error auto-playing video:", err)
                 // If autoplay fails, mark that we need user interaction
-                setUserInteracted(false)
 
                 // Try again with muted (browsers allow muted autoplay)
                 if (!isMuted) {
                   console.log("Trying muted autoplay as fallback")
-                  videoRef.current.muted = true
+                  if(videoRef?.current) {
+                    videoRef.current.muted = true
+                  }
                   setIsMuted(true)
-                  videoRef.current.play().catch((e) => console.error("Even muted autoplay failed:", e))
+                  videoRef?.current?.play().catch((e) => console.error("Even muted autoplay failed:", e))
                 }
               })
           }
@@ -182,7 +180,6 @@ export default function VideoPlayer({ videoId, startTime = 0, fallbackUrl, autoP
     }
 
     const handleUserInteraction = () => {
-      setUserInteracted(true)
       // Try to play the video if it's not already playing
       if (videoRef.current && !isPlaying && !isLoading) {
         videoRef.current.play().catch((err) => {
@@ -204,7 +201,6 @@ export default function VideoPlayer({ videoId, startTime = 0, fallbackUrl, autoP
 
   const togglePlay = () => {
     // Mark that user has interacted
-    setUserInteracted(true)
     setShowControls(true)
 
     if (videoRef.current) {
@@ -232,7 +228,6 @@ export default function VideoPlayer({ videoId, startTime = 0, fallbackUrl, autoP
 
   const handleVideoError = () => {
     console.error(`Video failed to load: ${videoSrc}. Attempt: ${loadAttempt + 1}`)
-    setVideoError(true)
 
     const disneyKeys = Object.keys(fallbackVideos).filter(
       (key) =>

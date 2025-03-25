@@ -30,7 +30,7 @@ export default function Home() {
               </h1>
 
               <p className="text-xl md:text-2xl text-[#1D1C1B] max-w-2xl mx-auto font-medium leading-relaxed [text-shadow:_0_1px_2px_rgba(255,255,255,0.7)]">
-                AI-powered video recommendations that understand your preferences and deliver content you'll love.
+                {`AI-powered video recommendations that understand your preferences and deliver content you'll love.`}
               </p>
 
               <div className="flex flex-wrap justify-center gap-4 pt-6">
