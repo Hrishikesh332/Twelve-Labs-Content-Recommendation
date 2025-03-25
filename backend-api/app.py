@@ -3,6 +3,8 @@ from twelvelabs import TwelveLabs
 from qdrant_client import QdrantClient
 from qdrant_client.models import VectorParams, Distance, PointStruct
 import os
+
+import requests
 from dotenv import load_dotenv
 import uuid
 import logging
@@ -131,66 +133,6 @@ def health_check():
         'status': 'ok',
         'api_version': '1.0'
     })
-
-
-# Handle video upload and embedding generation
-#------------------Not Using-----------------
-# @app.route('/upload_video', methods=['POST'])
-# def upload_video():
-#     if 'video' not in request.files:
-#         return jsonify({'error': 'No video file provided'}), 400
-    
-#     video_file = request.files['video']
-#     if not video_file or not allowed_file(video_file.filename):
-#         return jsonify({'error': 'Invalid video file'}), 400
-#     try:
-#         filename = secure_filename(video_file.filename)
-#         temp_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-#         video_file.save(temp_path)
-        
-#         # Generate embeddings using TwelveLabs
-#         logger.info("Generating video embeddings...")
-#         task = client.embed.task.create(
-#             model_name="Marengo-retrieval-2.7",
-#             video_file=temp_path
-#         )
-        
-#         task.wait_for_done(sleep_interval=3)
-#         task_result = client.embed.task.retrieve(task.id)
-
-#         video_id = str(uuid.uuid4())
-#         permanent_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{video_id}.mp4")
-#         os.rename(temp_path, permanent_path)
-        
-#         # Store embeddings in Qdrant
-#         points = [
-#             PointStruct(
-#                 id=f"{video_id}_{idx}",
-#                 vector=segment.embeddings_float,
-#                 payload={
-#                     'video_id': video_id,
-#                     'filename': filename,
-#                     'start_time': segment.start_offset_sec,
-#                     'end_time': segment.end_offset_sec,
-#                     'file_path': permanent_path
-#                 }
-#             )
-#             for idx, segment in enumerate(task_result.video_embedding.segments)
-#         ]
-#         qdrant_client.upsert(
-#             collection_name=COLLECTION_NAME,
-#             points=points
-#         )
-#         return jsonify({
-#             'message': 'Video processed successfully',
-#             'video_id': video_id,
-#             'segments': len(points)
-#         })
-#     except Exception as e:
-#         logger.error(f"Upload error: {str(e)}")
-#         if 'temp_path' in locals() and os.path.exists(temp_path):
-#             os.remove(temp_path)
-#         return jsonify({'error': str(e)}), 500
 
 
 # Handle text based search for video segments
