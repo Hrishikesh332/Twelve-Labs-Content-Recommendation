@@ -199,12 +199,12 @@ export default function ExplorePage() {
 
       // Log the API call
       const requestBody = { query: freshQuery }
-      console.log("URL ",process.env.NEXT_PUBLIC_URL || '')
+      console.log("URL ",`${process.env.NEXT_PUBLIC_URL}/search` || '')
 
-      logApiCall("POST", process.env.NEXT_PUBLIC_URL || '', requestBody)
+      logApiCall("POST", `${process.env.NEXT_PUBLIC_URL}/search` || '', requestBody)
 
       // fetch from backend
-      const response = await fetch(process.env.NEXT_PUBLIC_URL || '', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_URL}/search` || '', {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
