@@ -64,6 +64,12 @@ except Exception as e:
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 
+# Server Notification
+@app.route('/')
+def home():
+    return "Server is running! Current time: " + str(datetime.now())
+
+
 # Initialize Qdrant collection for video embeddings
 def init_qdrant():
     try:
