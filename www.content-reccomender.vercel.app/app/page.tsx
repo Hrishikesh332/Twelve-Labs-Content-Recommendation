@@ -1,27 +1,37 @@
+"use client"
+
+import { useState } from "react"
 import Link from "next/link"
 import Navbar from "@/components/navbar"
 import VideoGrid from "@/components/video-grid"
 import { ArrowRight, Play, ChevronDown, Zap, Sparkles, Settings } from "lucide-react"
+import { ComingSoonDialog } from "@/components/coming-soon-dialog"
 
 export default function Home() {
+  const [showComingSoonDialog, setShowComingSoonDialog] = useState(false)
+
   return (
     <div className="min-h-screen bg-[#F4F3F3] overflow-hidden">
+      {/* Navbar */}
       <Navbar />
 
+      {/* Main content */}
       <div className="relative min-h-screen">
-
+        {/* Video grid background with dynamic layout - reduced opacity to 50% */}
         <div className="absolute inset-0 opacity-50">
           <VideoGrid />
         </div>
 
+        {/* Gradient overlay for better text readability - lighter gradient */}
         <div className="absolute inset-0 bg-gradient-to-b from-[#F4F3F3]/70 via-[#F4F3F3]/40 to-[#F4F3F3]/70 z-0"></div>
 
+        {/* Content overlay - no blurry background */}
         <div className="relative min-h-screen flex flex-col justify-center items-center px-6 z-10 pt-10">
           <div className="max-w-4xl mx-auto text-center">
             {/* Hero section */}
             <div className="space-y-6">
               <div className="inline-block px-6 py-2 border border-[#D3D1CF] rounded-full bg-[#F8F8F7]/90 mb-4 shadow-md">
-                <span className="text-[#1D1C1B] text-sm font-medium">Powered by Twelve Labs</span>
+                <span className="text-[#1D1C1B] text-sm font-medium">Powered by Advanced AI</span>
               </div>
 
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-[#1D1C1B] leading-tight tracking-tight [text-shadow:_0_1px_3px_rgba(255,255,255,0.7)] whitespace-nowrap">
@@ -30,7 +40,7 @@ export default function Home() {
               </h1>
 
               <p className="text-xl md:text-2xl text-[#1D1C1B] max-w-2xl mx-auto font-medium leading-relaxed [text-shadow:_0_1px_2px_rgba(255,255,255,0.7)]">
-                {`AI-powered video recommendations that understand your preferences and deliver content you'll love.`}
+                AI-powered video recommendations that understand your preferences and deliver content you&apos;ll love.
               </p>
 
               <div className="flex flex-wrap justify-center gap-4 pt-6">
@@ -41,13 +51,13 @@ export default function Home() {
                   Explore Now
                   <ArrowRight className="h-5 w-5" />
                 </Link>
-                <Link
-                  href="/blog"
+                <button
+                  onClick={() => setShowComingSoonDialog(true)}
                   className="inline-flex items-center justify-center gap-2 bg-[#F8F8F7] text-[#1D1C1B] border border-[#D3D1CF] px-8 py-4 rounded-full text-lg font-medium hover:bg-[#F4F3F3] transition-all shadow-sm"
                 >
                   <Play className="h-5 w-5" />
                   How It Works
-                </Link>
+                </button>
               </div>
             </div>
 
@@ -59,7 +69,7 @@ export default function Home() {
         </div>
 
         {/* Enhanced Features Section - improve spacing and design */}
-        <div className="relative z-10 py-24 px-6 bg-[#F4F3F3]">
+        <div id="features" className="relative z-10 py-24 px-6 bg-[#F4F3F3]">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16">
               <span className="inline-block px-4 py-1.5 bg-[#F8F8F7] text-[#00E21B] rounded-full text-sm font-medium mb-4 shadow-sm">
@@ -84,7 +94,7 @@ export default function Home() {
                 <div className="p-6">
                   <h3 className="text-xl font-bold text-[#1D1C1B] mb-2">Smart Recommendations</h3>
                   <p className="text-[#1D1C1B]/80 text-sm">
-                    Marengo retreival 2.7 embedded content discovery from Qdrant that learns from your preferences and viewing habits.
+                    AI-powered content discovery that learns from your preferences and viewing habits.
                   </p>
                   <Link
                     href="/features/recommendations"
@@ -108,7 +118,7 @@ export default function Home() {
                 <div className="p-6">
                   <h3 className="text-xl font-bold text-[#1D1C1B] mb-2">Customizable Experience</h3>
                   <p className="text-[#1D1C1B]/80 text-sm">
-                    Fine tune your content feed with personalized categories and preferences.
+                    Fine-tune your content feed with personalized categories and preferences.
                   </p>
                   <Link
                     href="/features/personalization"
@@ -132,7 +142,7 @@ export default function Home() {
                 <div className="p-6">
                   <h3 className="text-xl font-bold text-[#1D1C1B] mb-2">Lightning Fast</h3>
                   <p className="text-[#1D1C1B]/80 text-sm">
-                    Instant recommendations powered by Twelve Labs embedding technology.
+                    Instant recommendations powered by advanced embedding technology.
                   </p>
                   <Link
                     href="/features/performance"
@@ -194,7 +204,7 @@ export default function Home() {
                   <rect className="st0" x="39.8" y="100.1" width="12.9" height="9" rx="2.6" ry="2.6"></rect>
                   <rect className="st0" x="124.1" y="62.8" width="33.1" height="8.7" rx="2.6" ry="2.6"></rect>
                 </svg>
-                <span className="text-[#1D1C1B] font-semibold text-sm">Content Reccommender</span>
+                <span className="text-[#1D1C1B] font-semibold text-sm">VideoRec</span>
                 <span className="mx-3 text-[#D3D1CF]">|</span>
                 <span className="text-[#1D1C1B]/60 text-xs">© {new Date().getFullYear()} All rights reserved</span>
               </div>
@@ -243,6 +253,13 @@ export default function Home() {
             </div>
           </div>
         </footer>
+        {/* Coming Soon Dialog */}
+        <ComingSoonDialog
+          isOpen={showComingSoonDialog}
+          onClose={() => setShowComingSoonDialog(false)}
+          title="Coming Soon!"
+          description="The 'How It Works' feature is currently under development and will be released soon. Stay tuned for updates!"
+        />
       </div>
     </div>
   )

@@ -120,7 +120,7 @@ export default function Navbar() {
           {/* Right side actions */}
           <div className="flex items-center">
             <Link
-              href="https://github.com/Hrishikesh332/Content-Recommendation-System"
+              href="https://github.com/Hrishikesh332/Twelve-Labs-Content-Recommendation"
               target="_blank"
               className="text-[#1D1C1B]/70 hover:text-[#1D1C1B] transition-colors p-2 rounded-full hover:bg-[#F8F8F7]"
               aria-label="GitHub"
