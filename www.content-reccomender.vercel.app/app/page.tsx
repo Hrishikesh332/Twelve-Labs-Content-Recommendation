@@ -75,7 +75,7 @@ export default function Home() {
                 Features
               </span>
               <h2 className="text-3xl md:text-4xl font-bold text-[#1D1C1B] mb-4">
-                Discover the Power of Semantic Video Recommendation with Twelve Labs and Qdrant
+                Discover the Power of Semantic Video Recommendation
               </h2>
             </div>
 
