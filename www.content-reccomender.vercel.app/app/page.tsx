@@ -61,14 +61,13 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Scroll indicator - adjust position */}
+
             <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 animate-bounce">
               <ChevronDown className="h-8 w-8 text-[#1D1C1B]" />
             </div>
           </div>
         </div>
 
-        {/* Enhanced Features Section - improve spacing and design */}
         <div id="features" className="relative z-10 py-24 px-6 bg-[#F4F3F3]">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16">
@@ -76,7 +75,7 @@ export default function Home() {
                 Features
               </span>
               <h2 className="text-3xl md:text-4xl font-bold text-[#1D1C1B] mb-4">
-                Discover the Power of AI Recommendations
+                Discover the Power of Semantic Video Recommendation with Twelve Labs and Qdrant
               </h2>
             </div>
 
@@ -94,7 +93,7 @@ export default function Home() {
                 <div className="p-6">
                   <h3 className="text-xl font-bold text-[#1D1C1B] mb-2">Smart Recommendations</h3>
                   <p className="text-[#1D1C1B]/80 text-sm">
-                    AI-powered content discovery that learns from your preferences and viewing habits.
+                  Marengo retreival 2.7 embedded content discovery from Qdrant that learns from your preferences and viewing habits.
                   </p>
                   <Link
                     href="/features/recommendations"
@@ -118,7 +117,7 @@ export default function Home() {
                 <div className="p-6">
                   <h3 className="text-xl font-bold text-[#1D1C1B] mb-2">Customizable Experience</h3>
                   <p className="text-[#1D1C1B]/80 text-sm">
-                    Fine-tune your content feed with personalized categories and preferences.
+                  Fine tune your video content feed with personalized categories and preferences.
                   </p>
                   <Link
                     href="/features/personalization"
@@ -142,7 +141,7 @@ export default function Home() {
                 <div className="p-6">
                   <h3 className="text-xl font-bold text-[#1D1C1B] mb-2">Lightning Fast</h3>
                   <p className="text-[#1D1C1B]/80 text-sm">
-                    Instant recommendations powered by advanced embedding technology.
+                  Instant recommendations powered by Twelve Labs embedding and Qdrant search.
                   </p>
                   <Link
                     href="/features/performance"
@@ -253,7 +252,7 @@ export default function Home() {
             </div>
           </div>
         </footer>
-        {/* Coming Soon Dialog */}
+
         <ComingSoonDialog
           isOpen={showComingSoonDialog}
           onClose={() => setShowComingSoonDialog(false)}
