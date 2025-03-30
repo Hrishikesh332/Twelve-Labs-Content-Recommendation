@@ -30,51 +30,52 @@ export default function Home() {
           <div className="max-w-4xl mx-auto text-center">
             {/* Hero section */}
             <div className="space-y-6">
-              <div className="inline-block px-6 py-2 border border-[#D3D1CF] rounded-full bg-[#F8F8F7]/90 mb-4 shadow-md">
-                <span className="text-[#1D1C1B] text-sm font-medium">Powered by Twelve Labs</span>
+              <div className="inline-block px-4 sm:px-6 py-2 border border-[#D3D1CF] rounded-full bg-[#F8F8F7]/90 mb-4 shadow-md">
+                <span className="text-[#1D1C1B] text-xs sm:text-sm font-medium">Powered by Twelve Labs</span>
               </div>
 
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-[#1D1C1B] leading-tight tracking-tight [text-shadow:_0_1px_3px_rgba(255,255,255,0.7)] whitespace-nowrap">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#1D1C1B] leading-tight tracking-tight [text-shadow:_0_1px_3px_rgba(255,255,255,0.7)] break-words">
                 Discover Content That{" "}
                 <span className="text-[#00E21B] [text-shadow:_0_1px_2px_rgba(255,255,255,0.5)]">Matters</span>
               </h1>
 
-              <p className="text-xl md:text-2xl text-[#1D1C1B] max-w-2xl mx-auto font-medium leading-relaxed [text-shadow:_0_1px_2px_rgba(255,255,255,0.7)]">
+              <p className="text-lg sm:text-xl md:text-2xl text-[#1D1C1B] max-w-2xl mx-auto font-medium leading-relaxed [text-shadow:_0_1px_2px_rgba(255,255,255,0.7)] px-2">
                 AI-powered video recommendations that understand your preferences and deliver content you&apos;ll love.
               </p>
 
-              <div className="flex flex-wrap justify-center gap-4 pt-6">
+              <div className="flex flex-wrap justify-center gap-3 sm:gap-4 pt-6">
                 <Link
                   href="/explore"
-                  className="inline-flex items-center justify-center gap-2 bg-[#00E21B] text-[#1D1C1B] px-8 py-4 rounded-full text-lg font-medium hover:shadow-lg hover:scale-105 transform transition-all"
+                  className="inline-flex items-center justify-center gap-2 bg-[#00E21B] text-[#1D1C1B] px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg font-medium hover:shadow-lg hover:scale-105 transform transition-all"
                 >
                   Explore Now
-                  <ArrowRight className="h-5 w-5" />
+                  <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5" />
                 </Link>
                 <button
                   onClick={() => setShowComingSoonDialog(true)}
-                  className="inline-flex items-center justify-center gap-2 bg-[#F8F8F7] text-[#1D1C1B] border border-[#D3D1CF] px-8 py-4 rounded-full text-lg font-medium hover:bg-[#F4F3F3] transition-all shadow-sm"
+                  className="inline-flex items-center justify-center gap-2 bg-[#F8F8F7] text-[#1D1C1B] border border-[#D3D1CF] px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg font-medium hover:bg-[#F4F3F3] transition-all shadow-sm"
                 >
-                  <Play className="h-5 w-5" />
+                  <Play className="h-4 w-4 sm:h-5 sm:w-5" />
                   How It Works
                 </button>
               </div>
             </div>
 
-
+            {/* Scroll indicator - adjust position */}
             <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 animate-bounce">
               <ChevronDown className="h-8 w-8 text-[#1D1C1B]" />
             </div>
           </div>
         </div>
 
+        {/* Enhanced Features Section - improve spacing and design */}
         <div id="features" className="relative z-10 py-24 px-6 bg-[#F4F3F3]">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16">
               <span className="inline-block px-4 py-1.5 bg-[#F8F8F7] text-[#00E21B] rounded-full text-sm font-medium mb-4 shadow-sm">
                 Features
               </span>
-              <h2 className="text-3xl md:text-4xl font-bold text-[#1D1C1B] mb-4">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#1D1C1B] mb-4 px-2">
                 Discover the Power of Semantic Video Recommendation
               </h2>
             </div>
@@ -96,7 +97,7 @@ export default function Home() {
                   Marengo retreival 2.7 embedded content discovery from Qdrant that learns from your preferences and viewing habits.
                   </p>
                   <Link
-                    href="/features/recommendations"
+                    href="https://www.twelvelabs.io/blog/introducing-marengo-2-7"
                     className="mt-4 inline-flex items-center text-[#00E21B] font-medium hover:text-[#00E21B]/80 text-sm"
                   >
                     Learn more <ArrowRight className="ml-1 h-3.5 w-3.5" />
@@ -117,10 +118,10 @@ export default function Home() {
                 <div className="p-6">
                   <h3 className="text-xl font-bold text-[#1D1C1B] mb-2">Customizable Experience</h3>
                   <p className="text-[#1D1C1B]/80 text-sm">
-                  Fine tune your video content feed with personalized categories and preferences.
+                    Fine-tune your content feed with personalized categories and preferences.
                   </p>
                   <Link
-                    href="/features/personalization"
+                    href="https://github.com/Hrishikesh332/Twelve-Labs-Content-Recommendation"
                     className="mt-4 inline-flex items-center text-[#00E21B] font-medium hover:text-[#00E21B]/80 text-sm"
                   >
                     Learn more <ArrowRight className="ml-1 h-3.5 w-3.5" />
@@ -144,7 +145,7 @@ export default function Home() {
                   Instant recommendations search powered by Twelve Labs embedding and Qdrant search.
                   </p>
                   <Link
-                    href="/features/performance"
+                    href="https://www.twelvelabs.io/blog/twelve-labs-and-qdrant"
                     className="mt-4 inline-flex items-center text-[#00E21B] font-medium hover:text-[#00E21B]/80 text-sm"
                   >
                     Learn more <ArrowRight className="ml-1 h-3.5 w-3.5" />
@@ -158,8 +159,8 @@ export default function Home() {
         {/* Ultra-Minimal Footer */}
         <footer className="bg-[#F8F8F7] py-6 px-6 relative z-10 border-t border-[#D3D1CF]">
           <div className="max-w-6xl mx-auto">
-            <div className="flex flex-wrap items-center justify-between gap-y-4">
-              <div className="flex items-center">
+            <div className="flex flex-col sm:flex-row flex-wrap items-center justify-between gap-y-4">
+              <div className="flex items-center flex-wrap justify-center">
                 <svg
                   id="Layer_1"
                   xmlns="http://www.w3.org/2000/svg"
@@ -252,7 +253,7 @@ export default function Home() {
             </div>
           </div>
         </footer>
-
+        {/* Coming Soon Dialog */}
         <ComingSoonDialog
           isOpen={showComingSoonDialog}
           onClose={() => setShowComingSoonDialog(false)}

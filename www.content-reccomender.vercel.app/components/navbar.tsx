@@ -147,7 +147,7 @@ export default function Navbar() {
                 <rect className="st0" x="39.8" y="100.1" width="12.9" height="9" rx="2.6" ry="2.6"></rect>
                 <rect className="st0" x="124.1" y="62.8" width="33.1" height="8.7" rx="2.6" ry="2.6"></rect>
               </svg>
-              <span className="text-[#1D1C1B] font-medium text-base tracking-tight group-hover:text-[#00E21B] transition-colors duration-300 truncate max-w-[150px] sm:max-w-full">
+              <span className="text-[#1D1C1B] font-medium text-base tracking-tight group-hover:text-[#00E21B] transition-colors duration-300 truncate max-w-[120px] sm:max-w-full">
                 Content Recommender
               </span>
             </Link>
@@ -210,7 +210,7 @@ export default function Navbar() {
           mobileMenuOpen ? "translate-x-0" : "translate-x-full",
         )}
       >
-        <div className="pt-20 pb-6 px-6 h-full flex flex-col">
+        <div className="pt-20 pb-6 px-4 sm:px-6 h-full flex flex-col">
           <div className="space-y-2 flex-1">
             {navItems.map((item) => {
               const active = isItemActive(item.path)
