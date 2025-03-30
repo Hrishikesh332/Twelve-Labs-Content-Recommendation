@@ -158,6 +158,22 @@ const categoryFallbacks = {
     "https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos-embed/1203fb1a-ef99-4cc0-a212-8bf1589216ea_044_🗻 Frozen Quest： Can Anna Stop Winter？ ｜ Frozen ｜ Disney Kids_UrrHl9p2XDM.mp4",
 }
 
+// Map of category values to their full descriptions
+const categoryDescriptions: Record<string, string> = {
+  animation: "Animation - General Animated Content",
+  "3d-animation": "3D Animation - Computer-Generated Graphics",
+  "traditional-animation": "Traditional Animation - Hand-Drawn Style",
+  "stop-motion": "Stop Motion - Frame-by-Frame Physical Animation",
+  anime: "Anime - Japanese Animation Style",
+  cartoon: "Cartoon - Stylized Short-Form Animation",
+  kids: "Kids - Educational & Child-Friendly",
+  family: "Family - All-Ages Entertainment",
+  adventure: "Adventure - Exciting Journeys & Quests",
+  comedy: "Comedy - Humorous & Lighthearted",
+  fantasy: "Fantasy - Magical Worlds & Creatures",
+  "sci-fi": "Sci-Fi - Futuristic & Technology-Based",
+}
+
 export default function ExplorePage() {
   const [videos, setVideos] = useState<VideoItem[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -200,14 +216,14 @@ export default function ExplorePage() {
       // Add the base query
       parts.push(finalQuery)
 
-      // Add theme if provided
+      // Add theme if provided - use quotes to keep multi-word themes together
       if (themeValue) {
-        parts.push(themeValue)
+        parts.push(`"${themeValue}"`)
       }
 
-      // Add mood if provided
+      // Add mood if provided - use quotes to keep multi-word moods together
       if (moodValue) {
-        parts.push(moodValue)
+        parts.push(`"${moodValue}"`)
       }
 
       // Join with spaces to create a clean query
@@ -233,10 +249,12 @@ export default function ExplorePage() {
 
       // Log the API call we're about to make
       const requestBody = { query: freshQuery }
-      logApiCall("POST", "http://localhost:5000/search", requestBody)
+      console.log("URL ",`${process.env.NEXT_PUBLIC_URL}/search` || '')
 
-      // Try to fetch from backend
-      const response = await fetch("http://localhost:5000/search", {
+      logApiCall("POST", `${process.env.NEXT_PUBLIC_URL}/search` || '', requestBody)
+
+      // fetch from backend
+      const response = await fetch(`${process.env.NEXT_PUBLIC_URL}/search` || '', {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -314,7 +332,7 @@ export default function ExplorePage() {
 
         setVideos([...customFallbacks, ...disneyVideos])
         setCurrentIndex(0) // Reset to first video
-        setError(`Using ${category} videos with animation content`)
+        setError(`Using ${category} videos with animated content`)
       } else if (themeValue) {
         const lowerTheme = themeValue.toLowerCase()
         if (Object.prototype.hasOwnProperty.call(categoryFallbacks, lowerTheme)) {
@@ -354,10 +372,17 @@ export default function ExplorePage() {
   const handleSearch = () => {
     let query = searchQuery.trim()
 
-    if (category && !query) {
-      query = `${category} videos`
-    } else if (category && query) {
-      query = `${query} ${category}`
+    if (category) {
+      // Get the full description for the selected category
+      const fullCategoryText = categoryDescriptions[category] || category
+
+      if (query) {
+        // If there's already a search query, add the full category text in quotes
+        query = `${query} "${fullCategoryText}"`
+      } else {
+        // If there's no search query, just use the full category text in quotes
+        query = `"${fullCategoryText}" videos`
+      }
     }
 
     if (!query) {
@@ -545,13 +570,15 @@ export default function ExplorePage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="animation">Animation - General Animated Content</SelectItem>
-                    <SelectItem value="cartoon">Cartoon - Stylized Short-Form Animation</SelectItem>
+                    <SelectItem value="sci-fi">Sci-Fi - Futuristic & Technology-Based</SelectItem>
                     <SelectItem value="kids">Kids - Educational & Child-Friendly</SelectItem>
+                    <SelectItem value="anime">Anime - Japanese Animation Style</SelectItem>
+                    <SelectItem value="cartoon">Cartoon - Stylized Short-Form Animation</SelectItem>
                     <SelectItem value="family">Family - All-Ages Entertainment</SelectItem>
                     <SelectItem value="adventure">Adventure - Exciting Journeys & Quests</SelectItem>
                     <SelectItem value="comedy">Comedy - Humorous & Lighthearted</SelectItem>
                     <SelectItem value="fantasy">Fantasy - Magical Worlds & Creatures</SelectItem>
-                    <SelectItem value="sci-fi">Sci-Fi - Futuristic & Technology-Based</SelectItem>
+                    
                   </SelectContent>
                 </Select>
               </div>
@@ -589,30 +616,19 @@ export default function ExplorePage() {
           <>
             {/* Main content layout with portrait video container - centered */}
             <div className="relative w-full max-w-md mx-auto flex flex-col items-center justify-center">
-              {/* Swipe instruction - now above the video */}
+              {/* Swipe instruction - now above the video
               <div className="mb-4 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-md">
                 <p className="text-sm font-medium text-gray-800">Swipe up/down to change videos</p>
-              </div>
+              </div> */}
 
-              {/* Video navigation indicator */}
-              <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-12 z-10 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-md">
+              {/* Video navigation indicator - repositioned */}
+              <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full shadow-md">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium">{currentIndex + 1}</span>
                   <span className="text-xs text-gray-500">of</span>
                   <span className="text-sm font-medium">{videos.length}</span>
                 </div>
               </div>
-
-              {/* Current preferences indicator */}
-              {(theme || mood) && (
-                <div className="absolute top-0 right-4 transform -translate-y-12 z-10 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-md">
-                  <div className="flex items-center gap-2 text-xs text-gray-700">
-                    {theme && <span>Theme: {theme}</span>}
-                    {theme && mood && <span>•</span>}
-                    {mood && <span>Mood: {mood}</span>}
-                  </div>
-                </div>
-              )}
 
               {/* Portrait video container with fixed aspect ratio */}
               <div
