@@ -31,7 +31,7 @@ export default function Home() {
             {/* Hero section */}
             <div className="space-y-6">
               <div className="inline-block px-6 py-2 border border-[#D3D1CF] rounded-full bg-[#F8F8F7]/90 mb-4 shadow-md">
-                <span className="text-[#1D1C1B] text-sm font-medium">Powered by Advanced AI</span>
+                <span className="text-[#1D1C1B] text-sm font-medium">Powered by Twelve Labs</span>
               </div>
 
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-[#1D1C1B] leading-tight tracking-tight [text-shadow:_0_1px_3px_rgba(255,255,255,0.7)] whitespace-nowrap">
@@ -141,7 +141,7 @@ export default function Home() {
                 <div className="p-6">
                   <h3 className="text-xl font-bold text-[#1D1C1B] mb-2">Lightning Fast</h3>
                   <p className="text-[#1D1C1B]/80 text-sm">
-                  Instant recommendations powered by Twelve Labs embedding and Qdrant search.
+                  Instant recommendations search powered by Twelve Labs embedding and Qdrant search.
                   </p>
                   <Link
                     href="/features/performance"
