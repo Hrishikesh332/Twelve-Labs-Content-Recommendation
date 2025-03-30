@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Github, Menu, X } from "lucide-react"
@@ -10,6 +12,7 @@ export default function Navbar() {
   const pathname = usePathname()
   const [scrolled, setScrolled] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [activeHash, setActiveHash] = useState("")
 
   // Handle scroll effect
   useEffect(() => {
@@ -20,23 +23,80 @@ export default function Navbar() {
       }
     }
 
+    // Track hash changes
+    const handleHashChange = () => {
+      setActiveHash(window.location.hash)
+    }
+
     window.addEventListener("scroll", handleScroll)
-    return () => window.removeEventListener("scroll", handleScroll)
+    window.addEventListener("hashchange", handleHashChange)
+
+    // Set initial hash
+    setActiveHash(window.location.hash)
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll)
+      window.removeEventListener("hashchange", handleHashChange)
+    }
   }, [scrolled])
 
   const navItems = [
     { name: "Home", path: "/" },
     { name: "Explore", path: "/explore" },
-    { name: "Features", path: "#features" },
+    { name: "Features", path: "/#features" },
     { name: "Blog", path: "/blog" },
   ]
+
+  // Function to handle smooth scrolling for hash links
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, path: string) => {
+    // If it's a hash link and we're on the homepage
+    if (path.startsWith("/#") && pathname === "/") {
+      e.preventDefault()
+      const targetId = path.substring(2)
+      const targetElement = document.getElementById(targetId)
+
+      if (targetElement) {
+        // Close mobile menu if open
+        setMobileMenuOpen(false)
+
+        // Update active hash
+        setActiveHash(`#${targetId}`)
+
+        // Scroll to the element with smooth behavior
+        targetElement.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        })
+
+        // Update URL hash without full page reload
+        window.history.pushState(null, "", path)
+      }
+    }
+  }
+
+  // Consistent GitHub URL
+  const githubUrl = "https://github.com/Hrishikesh332/Twelve-Labs-Content-Recommendation"
+
+  // Function to determine if a nav item is active
+  const isItemActive = (path: string) => {
+    if (path === "/") {
+      // Home is active only if we're on the home page AND no hash is active
+      return pathname === "/" && !activeHash
+    } else if (path.startsWith("/#")) {
+      // Hash links are active only if the hash matches
+      return pathname === "/" && activeHash === path.substring(1)
+    } else {
+      // Regular paths are active on exact match
+      return pathname === path
+    }
+  }
 
   return (
     <>
       <div className="fixed top-0 left-0 right-0 z-50 flex justify-center px-4 pt-4">
         <nav
           className={cn(
-            "w-full max-w-3xl transition-all duration-300 flex items-center justify-between rounded-full px-6",
+            "w-full max-w-5xl transition-all duration-300 flex items-center justify-between rounded-full px-6",
             scrolled
               ? "bg-[#F4F3F3]/85 backdrop-blur-md border border-[#D3D1CF]/30 py-2 shadow-sm"
               : "bg-[#F4F3F3]/70 py-3 border border-[#D3D1CF]/20",
@@ -87,7 +147,7 @@ export default function Navbar() {
                 <rect className="st0" x="39.8" y="100.1" width="12.9" height="9" rx="2.6" ry="2.6"></rect>
                 <rect className="st0" x="124.1" y="62.8" width="33.1" height="8.7" rx="2.6" ry="2.6"></rect>
               </svg>
-              <span className="text-[#1D1C1B] font-medium text-base tracking-tight group-hover:text-[#00E21B] transition-colors duration-300">
+              <span className="text-[#1D1C1B] font-medium text-base tracking-tight group-hover:text-[#00E21B] transition-colors duration-300 truncate max-w-[150px] sm:max-w-full">
                 Content Recommender
               </span>
             </Link>
@@ -97,15 +157,16 @@ export default function Navbar() {
           <div className="hidden md:flex items-center justify-center absolute left-1/2 transform -translate-x-1/2">
             <div className="flex items-center bg-[#F8F8F7]/50 backdrop-blur-sm rounded-full px-1.5 py-1 border border-[#D3D1CF]/30">
               {navItems.map((item) => {
-                const isActive = pathname === item.path
+                const active = isItemActive(item.path)
 
                 return (
                   <Link
                     key={item.name}
                     href={item.path}
+                    onClick={(e) => handleNavClick(e, item.path)}
                     className={cn(
                       "px-4 py-1.5 mx-0.5 text-sm font-medium transition-all duration-200 rounded-full",
-                      isActive
+                      active
                         ? "bg-white text-[#1D1C1B] font-semibold shadow-sm"
                         : "text-[#1D1C1B]/70 hover:text-[#1D1C1B] hover:bg-white/50",
                     )}
@@ -118,9 +179,9 @@ export default function Navbar() {
           </div>
 
           {/* Right side actions */}
-          <div className="flex items-center">
+          <div className="flex items-center pl-4">
             <Link
-              href="https://github.com/Hrishikesh332/Twelve-Labs-Content-Recommendation"
+              href={githubUrl}
               target="_blank"
               className="text-[#1D1C1B]/70 hover:text-[#1D1C1B] transition-colors p-2 rounded-full hover:bg-[#F8F8F7]"
               aria-label="GitHub"
@@ -152,16 +213,19 @@ export default function Navbar() {
         <div className="pt-20 pb-6 px-6 h-full flex flex-col">
           <div className="space-y-2 flex-1">
             {navItems.map((item) => {
-              const isActive = pathname === item.path
+              const active = isItemActive(item.path)
 
               return (
                 <Link
                   key={item.name}
                   href={item.path}
-                  onClick={() => setMobileMenuOpen(false)}
+                  onClick={(e) => {
+                    handleNavClick(e, item.path)
+                    setMobileMenuOpen(false)
+                  }}
                   className={cn(
                     "flex items-center justify-center px-4 py-3 rounded-xl text-base font-medium transition-all duration-300",
-                    isActive
+                    active
                       ? "bg-white text-[#1D1C1B] shadow-sm"
                       : "text-[#1D1C1B]/70 hover:bg-white/50 hover:text-[#1D1C1B]",
                   )}
@@ -175,7 +239,7 @@ export default function Navbar() {
           <div className="mt-auto pt-6 border-t border-[#D3D1CF]/30">
             <div className="flex items-center justify-center">
               <Link
-                href="https://github.com"
+                href={githubUrl}
                 target="_blank"
                 className="text-[#1D1C1B]/70 hover:text-[#1D1C1B] transition-colors p-2 rounded-full hover:bg-[#F8F8F7]"
                 aria-label="GitHub"

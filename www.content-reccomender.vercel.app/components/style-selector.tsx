@@ -62,16 +62,14 @@ export default function StyleSelector({
               <SelectValue placeholder="Choose an option" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="animation">Animation</SelectItem>
-              <SelectItem value="pixar">Pixar</SelectItem>
-              <SelectItem value="disney">Disney</SelectItem>
-              <SelectItem value="dreamworks">DreamWorks</SelectItem>
-              <SelectItem value="anime">Anime</SelectItem>
-              <SelectItem value="cartoon">Cartoon</SelectItem>
-              <SelectItem value="stopmotion">Stop Motion</SelectItem>
-              <SelectItem value="3d">3D Animation</SelectItem>
-              <SelectItem value="classic">Classic Animation</SelectItem>
-              <SelectItem value="superhero">Superhero</SelectItem>
+              <SelectItem value="animation">Animation - General Animated Content</SelectItem>
+              <SelectItem value="3d-animation">3D Animation - Computer-Generated Graphics</SelectItem>
+              <SelectItem value="traditional-animation">Traditional - Hand-Drawn Style</SelectItem>
+              <SelectItem value="stop-motion">Stop Motion - Frame-by-Frame Animation</SelectItem>
+              <SelectItem value="anime">Anime - Japanese Animation Style</SelectItem>
+              <SelectItem value="cartoon">Cartoon - Stylized Short-Form</SelectItem>
+              <SelectItem value="fantasy">Fantasy - Magical Worlds & Creatures</SelectItem>
+              <SelectItem value="sci-fi">Sci-Fi - Futuristic & Technology-Based</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -83,16 +81,16 @@ export default function StyleSelector({
               <SelectValue placeholder="Choose an option" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="adventure">Adventure</SelectItem>
-              <SelectItem value="comedy">Comedy</SelectItem>
-              <SelectItem value="fantasy">Fantasy</SelectItem>
-              <SelectItem value="family">Family-Friendly</SelectItem>
-              <SelectItem value="action">Action</SelectItem>
-              <SelectItem value="emotional">Emotional</SelectItem>
-              <SelectItem value="musical">Musical</SelectItem>
-              <SelectItem value="magical">Magical</SelectItem>
-              <SelectItem value="nostalgic">Nostalgic</SelectItem>
-              <SelectItem value="epic">Epic</SelectItem>
+              <SelectItem value="adventure">Adventure - Exciting Journeys & Quests</SelectItem>
+              <SelectItem value="comedy">Comedy - Humorous & Lighthearted</SelectItem>
+              <SelectItem value="fantasy">Fantasy - Magical & Enchanting</SelectItem>
+              <SelectItem value="family">Family - All-Ages Entertainment</SelectItem>
+              <SelectItem value="action">Action - Fast-Paced & Thrilling</SelectItem>
+              <SelectItem value="emotional">Emotional - Heartfelt & Moving</SelectItem>
+              <SelectItem value="musical">Musical - Song & Dance Features</SelectItem>
+              <SelectItem value="magical">Magical - Enchanted & Supernatural</SelectItem>
+              <SelectItem value="nostalgic">Nostalgic - Reminiscent & Classic</SelectItem>
+              <SelectItem value="epic">Epic - Grand Scale & Heroic</SelectItem>
             </SelectContent>
           </Select>
         </div>
