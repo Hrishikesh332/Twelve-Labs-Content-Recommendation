@@ -93,43 +93,43 @@ def allowed_file(filename):
 
 
 # Stream video file to client
-@app.route('/video/<video_id>')
-def serve_video(video_id):
+# @app.route('/video/<video_id>')
+# def serve_video(video_id):
 
-    try:
-        logger.info(f"Request to serve video: {video_id}")
+#     try:
+#         logger.info(f"Request to serve video: {video_id}")
 
-        search_result = qdrant_client.search(
-            collection_name=COLLECTION_NAME,
-            query_vector=[0] * VECTOR_SIZE, 
-            limit=1,
-            filter={
-                "must": [
-                    {"key": "video_id", "match": {"value": video_id}}
-                ]
-            }
-        )
-        if not search_result:
-            logger.error(f"Video not found: {video_id}")
-            return jsonify({'error': 'Video not found'}), 404
+#         search_result = qdrant_client.search(
+#             collection_name=COLLECTION_NAME,
+#             query_vector=[0] * VECTOR_SIZE, 
+#             limit=1,
+#             filter={
+#                 "must": [
+#                     {"key": "video_id", "match": {"value": video_id}}
+#                 ]
+#             }
+#         )
+#         if not search_result:
+#             logger.error(f"Video not found: {video_id}")
+#             return jsonify({'error': 'Video not found'}), 404
             
-        file_path = search_result[0].payload.get('file_path')
-        if not file_path or not os.path.exists(file_path):
-            logger.error(f"Video file not found at path: {file_path}")
-            return jsonify({'error': 'Video file not found'}), 404
+#         file_path = search_result[0].payload.get('file_path')
+#         if not file_path or not os.path.exists(file_path):
+#             logger.error(f"Video file not found at path: {file_path}")
+#             return jsonify({'error': 'Video file not found'}), 404
             
-        return send_file(
-            file_path,
-            mimetype='video/mp4',
-            as_attachment=False,
-            conditional=True
-        )
-    except Exception as e:
-        logger.exception(f"Error serving video {video_id}:")
-        return jsonify({
-            'error': 'Failed to serve video',
-            'details': str(e)
-        }), 500
+#         return send_file(
+#             file_path,
+#             mimetype='video/mp4',
+#             as_attachment=False,
+#             conditional=True
+#         )
+#     except Exception as e:
+#         logger.exception(f"Error serving video {video_id}:")
+#         return jsonify({
+#             'error': 'Failed to serve video',
+#             'details': str(e)
+#         }), 500
 
 
 # API health check endpoint
