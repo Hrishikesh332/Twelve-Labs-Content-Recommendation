@@ -25,10 +25,15 @@ Content Recommendation is an open source platform that makes use of vector simil
 
 ## Core Workflow Architecture
 
-![Core Workflow Architecture](https://github.com/Hrishikesh332/Twelve-Labs-Content-Recommendation/blob/master/backend-api/src/Content%20Reccomendation%20Core%20Architecture.png)
+![Core Workflow Architecture](https://github.com/Hrishikesh332/Twelve-Labs-Content-Recommendation/blob/master/backend-api/src/Content%20Recommendation%20Architecture.png)
 
+## Search Endpoint Flow
+
+![Search Endpoint Flow](https://github.com/Hrishikesh332/Twelve-Labs-Content-Recommendation/blob/master/backend-api/src/Search%20Endpoint.png)
 
 ## File Strcuture
+
+The frontend is developed using Next.js, while the backend is powered by Flask API with CORS enabled.
 
 ```
 ├── backend-api
@@ -111,18 +116,26 @@ git clone https://github.com/Hrishikesh332/Twelve-Labs-Content-Recommendation-.g
 
 For Backend - 
 
-1. To the Backend Directory
+1. **To the Backend Directory**
 
 ```
 cd backend-api
 ```
 
-2. Install dependencies
+2. **Create and activate a virtual environment**
+
+
+```shellscript
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
+
+3. **Install dependencies**
 ```
 pip install -r requirements.txt
 ```
 
-3. Configure environment variables -
+4. **Configure environment variables -**
 
 ```
 QDRANT_URL=your_qdrant_url
@@ -130,36 +143,57 @@ QDRANT_API_KEY=your_qdrant_api_key
 API_KEY=your_twelvelabs_api_key
 ```
 
-4. Run the backend application -
+5. **Run the backend application -**
 
 ```
 python app.py
 ```
 
-5. Navigate to `http://localhost:5000` in your browse
+6. Navigate to `http://localhost:5000` in your browse
     
 
 For Frontend 
 
-1. To the Frontend Directory
+1. **To the Frontend Directory**
 
 ```
 cd www.content-reccomender.vercel.app
 ```
 
-2. Setup the Environment
+2. **Install frontend dependencies**
 
 ```
 npm install
 ```
 
-3. Run the application - 
+3. **Set up environment variables**
+
+
+Create a `.env.local` file in the frontend directory:
+
+```plaintext
+NEXT_PUBLIC_API_URL=http://localhost:5000
+```
+
+4. **Run the application -**
 
 ```
 npm run dev
 ```
 
-4. Navigate to `http://localhost:3000` in your browse
+5. Navigate to `http://localhost:3000` in your browse
+
+
+### API Usage
+
+The backend provides search Endpoint -
+
+```shellscript
+# Search for videos
+curl -X POST http://localhost:5000/search \
+  -H "Content-Type: application/json" \
+  -d '{"query": "Sci Fi Robot Animation"}'
+```
 
 ## Queries
 
