@@ -204,7 +204,7 @@ export default function Home() {
                   <rect className="st0" x="39.8" y="100.1" width="12.9" height="9" rx="2.6" ry="2.6"></rect>
                   <rect className="st0" x="124.1" y="62.8" width="33.1" height="8.7" rx="2.6" ry="2.6"></rect>
                 </svg>
-                <span className="text-[#1D1C1B] font-semibold text-sm">VideoRec</span>
+                <span className="text-[#1D1C1B] font-semibold text-sm">Content Recommender</span>
                 <span className="mx-3 text-[#D3D1CF]">|</span>
                 <span className="text-[#1D1C1B]/60 text-xs">© {new Date().getFullYear()} All rights reserved</span>
               </div>
@@ -219,19 +219,27 @@ export default function Home() {
                 <Link href="/terms" className="text-[#1D1C1B]/70 hover:text-[#1D1C1B] transition-colors">
                   Terms
                 </Link>
-                <div className="flex space-x-3 ml-2">
-                  {["facebook", "twitter", "github"].map((social) => (
+               <div className="flex space-x-3 ml-2">
+                  {["website", "twitter", "github"].map((social) => (
                     <a
                       key={social}
-                      href="#"
+                      href={
+                        social === "website" 
+                          ? "https://www.twelvelabs.io/" 
+                          : social === "twitter" 
+                            ? "https://x.com/twelve_labs" 
+                            : "https://github.com/twelvelabs-io"
+                      }
                       className="text-[#1D1C1B]/50 hover:text-[#1D1C1B] transition-colors"
                       aria-label={`${social} link`}
+                      target="_blank"
+                      rel="noopener noreferrer"
                     >
                       <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        {social === "facebook" && (
+                        {social === "website" && (
                           <path
                             fillRule="evenodd"
-                            d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z"
+                            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"
                             clipRule="evenodd"
                           />
                         )}
@@ -248,7 +256,7 @@ export default function Home() {
                       </svg>
                     </a>
                   ))}
-                </div>
+</div>
               </div>
             </div>
           </div>
