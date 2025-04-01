@@ -353,16 +353,6 @@ def search():
                 logger.warning(f"Skipping malformed result: {str(e)}")
                 continue
                 
-        formatted_results.append({
-            'video_id': 'fallback-10',
-            'filename': 'fallback10.mp4',
-            'start_time': 0,
-            'end_time': 30,
-            'score': 0.75,
-            'confidence': 'medium',
-            'url': 'https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos/tiny.mp4'
-        })
-        logger.info("Added special fallback-10 video to results")
         logger.info(f"Returning {len(formatted_results)} results")
         return jsonify(formatted_results)
     except Exception as e:
