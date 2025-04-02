@@ -135,46 +135,46 @@ def search():
                 model_name="Marengo-retrieval-2.7",
                 text=formatted_query
             )
-            logger.info("Successfully generated query embedding")
             
-            # Log embedding details if available
-            if hasattr(embedding_response, 'text_embedding'):
-                vector = embedding_response.text_embedding.segments[0].embeddings_float
-                logger.info(f"Embedding generated with {len(vector)} dimensions")
-            else:
-                logger.warning("Embedding response doesn't have expected structure")
+            # Get the embedding vector
+            vector = embedding_response.text_embedding.segments[0].embeddings_float
+            logger.info(f"Successfully generated embedding with {len(vector)} dimensions")
         except Exception as e:
             logger.error(f"Error generating embedding: {str(e)}")
             return jsonify({
                 'error': 'Failed to process search query',
                 'details': str(e)
             }), 500
-            
-        # Validate embedding response
-        if not embedding_response or not hasattr(embedding_response, 'text_embedding'):
-            logger.error("No embedding was generated for the query")
-            return jsonify({
-                'error': 'Failed to generate embedding',
-                'details': 'No embedding was generated for the query'
-            }), 500
-            
-        # Get the embedding vector
-        vector = embedding_response.text_embedding.segments[0].embeddings_float
         
-        # Primary search strategy: vector search in Qdrant
-        logger.info(f"Searching Qdrant collection '{COLLECTION_NAME}' for similar vectors (limit: 10)")
+        # Similarity Search in Qdrant
+        logger.info(f"Searching Qdrant collection '{COLLECTION_NAME}' for similar vectors")
         try:
-            search_results = qdrant_client.search(
-                collection_name=COLLECTION_NAME,
-                query_vector=vector,
-                limit=10
-            )
-            logger.info(f"Qdrant search returned {len(search_results)} results")
+            # Execute vector search
+            # query_response = qdrant_client.query_points(
+            #     collection_name=COLLECTION_NAME,
+            #     query=vector,
+            #     limit=10,
+            #     with_payload=True
+            # )
             
-            # Log detailed information about each result
-            for i, result in enumerate(search_results):
-                logger.debug(f"Result {i+1}: ID={result.id}, Score={result.score}")
-                logger.debug(f"Payload: {json.dumps(result.payload, default=str)}")
+            # Access the points attribute of the response object
+            # search_results = query_response.points
+            logger.info(f"Vector search returned {len(search_results)} results")
+            
+            # If no results from vector search, try scroll as fallback
+            if not search_results:
+                logger.info("No vector search results, using scroll as fallback")
+                scroll_response = qdrant_client.scroll(
+                    collection_name=COLLECTION_NAME,
+                    limit=10,
+                    with_payload=True
+                )
+                
+                # Properly handle the scroll response which is a tuple (points, offset)
+                fallback_results, next_offset = scroll_response
+                search_results = fallback_results
+                
+                logger.info(f"Scroll fallback returned {len(search_results)} results")
             
         except Exception as e:
             logger.error(f"Qdrant search error: {str(e)}")
@@ -182,76 +182,61 @@ def search():
                 'error': 'Search engine error',
                 'details': str(e)
             }), 500
-            
-        # If no results found, use scroll as fallback strategy
-        if not search_results:
-            logger.info("No matching results found, using scroll fallback strategy")
-            try:
-                logger.info(f"Executing scroll on collection '{COLLECTION_NAME}' (limit: 10)")
-                fallback_results = qdrant_client.scroll(
-                    collection_name=COLLECTION_NAME,
-                    limit=10,
-                    with_payload=True,
-                    with_vectors=False
-                )[0]
-                search_results = fallback_results
-                logger.info(f"Scroll returned {len(fallback_results)} fallback results")
-                
-                # Log fallback results
-                for i, result in enumerate(fallback_results):
-                    logger.debug(f"Fallback result {i+1}: ID={result.id}")
-                    logger.debug(f"Fallback payload: {json.dumps(result.payload, default=str)}")
-                
-            except Exception as e:
-                logger.error(f"Error getting fallback results: {str(e)}")
-                return jsonify({
-                    'error': 'Failed to retrieve fallback results',
-                    'details': str(e)
-                }), 500
         
         # If still no results, return empty list
         if not search_results:
-            logger.info("No results found after fallback strategy, returning empty list")
+            logger.info("No results found, returning empty list")
             return jsonify([])
             
+        # Log the type of the first result to help with debugging
+        if search_results:
+            logger.debug(f"First result type: {type(search_results[0])}")
+            logger.debug(f"First result attributes: {dir(search_results[0])}")
+        
         # Format and return the results
         formatted_results = []
-        for match in search_results:
-            try:
-                # Get filename directly from payload
-                filename = match.payload.get('filename', 'video.mp4')
-                
-                # Extract video_url from payload
-                video_url = match.payload.get('video_url')
-                
-                # Get match score (if from search) or default to 0.5 (if from scroll)
-                score = float(getattr(match, 'score', 0.5))
-                confidence = 'high' if score > 0.7 else 'medium'
-                
-                # Create the result object
-                result = {
-                    'video_id': match.payload.get('video_id', f"video_{match.id}"),
-                    'filename': filename,
-                    'start_time': float(match.payload.get('start_time', 0)),
-                    'end_time': float(match.payload.get('end_time', 30)),
-                    'score': score,
-                    'confidence': confidence,
-                    'url': video_url
-                }
-                formatted_results.append(result)
-                
-                # Log each formatted result
-                logger.info(f"Formatted result: video_id={result['video_id']}, "
-                           f"filename={result['filename']}, score={result['score']}, "
-                           f"confidence={result['confidence']}")
-                
-            except Exception as e:
-                logger.warning(f"Skipping malformed result: {str(e)}")
-                continue
-
-        # Log the final list of results
-        logger.info(f"Returning {len(formatted_results)} results to client")
-        logger.debug(f"Complete result set: {json.dumps(formatted_results, default=str)}")
+        
+        for result in search_results:
+            # ScoredPoint objects have id, score, and payload attributes
+            point_id = result.id
+            score = float(result.score)
+            payload = result.payload
+            
+            logger.debug(f"Processing result ID={point_id} with score={score}")
+            
+            # Extract required fields from payload
+            video_id = payload.get('video_id', f"video_{point_id}")
+            filename = payload.get('original_filename', payload.get('filename', 'video.mp4'))
+            video_url = payload.get('video_url')
+            
+            # Get start and end times with defaults
+            start_time = float(payload.get('start_time', 0))
+            end_time = float(payload.get('end_time', 30))
+            
+            # Determine confidence level
+            confidence = 'high' if score > 0.7 else 'medium'
+            
+            # Create the result object
+            result_item = {
+                'video_id': video_id,
+                'filename': filename,
+                'start_time': start_time,
+                'end_time': end_time,
+                'score': score,
+                'confidence': confidence,
+                'url': video_url
+            }
+            
+            formatted_results.append(result_item)
+            logger.info(f"Added result: video_id={video_id}, score={score:.4f}")
+        
+        total_results = len(formatted_results)
+        logger.info(f"Returning {total_results} results to client")
+        
+        if total_results > 0:
+            # Log top result score for monitoring quality
+            top_score = formatted_results[0]['score']
+            logger.info(f"Top result score: {top_score:.4f}")
         
         return jsonify(formatted_results)
         
@@ -261,7 +246,9 @@ def search():
             'error': 'Internal server error',
             'details': str(e)
         }), 500
-    
+
+
+
 try:
     init_qdrant()
 except Exception as e:
