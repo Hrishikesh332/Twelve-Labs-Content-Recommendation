@@ -28,6 +28,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Load API keys from environment variables
 API_KEY = os.getenv('API_KEY')
 QDRANT_HOST = os.getenv('QDRANT_HOST')
 QDRANT_API_KEY = os.getenv('QDRANT_API_KEY')
@@ -37,6 +38,7 @@ if not API_KEY:
 if not QDRANT_HOST or not QDRANT_API_KEY:
     raise ValueError("Qdrant credentials are not set")
 
+# Configure file upload settings
 app.config.update(
     UPLOAD_FOLDER=os.path.join(os.getcwd(), 'uploads'),
     MAX_CONTENT_LENGTH=16 * 1024 * 1024, 
@@ -45,9 +47,9 @@ app.config.update(
 
 # Qdrant Configuration
 COLLECTION_NAME = "content_collection"
-VECTOR_SIZE = 1024
+VECTOR_SIZE = 1024 # Size of vector embeddings
 
-# Initialize clients
+# Initialize clients for TwelveLabs API and Qdrant database
 try:
     client = TwelveLabs(api_key=API_KEY)
     qdrant_client = QdrantClient(
@@ -70,7 +72,7 @@ def home():
     return "Server is running! Current time: " + str(datetime.now())
 
 
-# Initialize Qdrant collection for video embeddings
+# Initialize Qdrant collection for storing video embeddings
 def init_qdrant():
     try:
         collections = qdrant_client.get_collections().collections
@@ -80,56 +82,13 @@ def init_qdrant():
                 collection_name=COLLECTION_NAME,
                 vectors_config=VectorParams(
                     size=VECTOR_SIZE,
-                    distance=Distance.COSINE
+                    distance=Distance.COSINE # Distance metric as cosine for similarity search
                 )
             )
             logger.info(f"Created collection: {COLLECTION_NAME}")
     except Exception as e:
         logger.error(f"Qdrant initialization error: {str(e)}")
         raise
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
-
-
-# Stream video file to client
-# @app.route('/video/<video_id>')
-# def serve_video(video_id):
-
-#     try:
-#         logger.info(f"Request to serve video: {video_id}")
-
-#         search_result = qdrant_client.search(
-#             collection_name=COLLECTION_NAME,
-#             query_vector=[0] * VECTOR_SIZE, 
-#             limit=1,
-#             filter={
-#                 "must": [
-#                     {"key": "video_id", "match": {"value": video_id}}
-#                 ]
-#             }
-#         )
-#         if not search_result:
-#             logger.error(f"Video not found: {video_id}")
-#             return jsonify({'error': 'Video not found'}), 404
-            
-#         file_path = search_result[0].payload.get('file_path')
-#         if not file_path or not os.path.exists(file_path):
-#             logger.error(f"Video file not found at path: {file_path}")
-#             return jsonify({'error': 'Video file not found'}), 404
-            
-#         return send_file(
-#             file_path,
-#             mimetype='video/mp4',
-#             as_attachment=False,
-#             conditional=True
-#         )
-#     except Exception as e:
-#         logger.exception(f"Error serving video {video_id}:")
-#         return jsonify({
-#             'error': 'Failed to serve video',
-#             'details': str(e)
-#         }), 500
 
 
 # API health check endpoint
@@ -141,11 +100,11 @@ def health_check():
     })
 
 
-# Handle text based search for video segments
+# Endpoint for searching video segments based on pereferenc/mood - text query
 @app.route('/search', methods=['POST'])
 def search():
-
     try:
+        # Ensure the request contains JSON data
         if not request.is_json:
             logger.warning("Request is not JSON format")
             return jsonify({
@@ -162,20 +121,28 @@ def search():
                 'details': 'Please provide a search query'
             }), 400
             
-        logger.info(f"Processing search query: {query}")
-
-        query = f"Provide the relevant content of the genre and the mood of - {query}"
+        # Log the original query
+        logger.info(f"Original search query: {query}")
+        
+        # Format the query for embedding
+        formatted_query = f"Provide the relevant content of the genre and the mood of - {query}"
+        logger.info(f"Formatted query for embedding: {formatted_query}")
         
         # Generate embedding for the search query
-        embedding_response = None
-        logger.info(f"Processing search query: {query}")
         try:
-            logger.debug(f"Generating embedding for query: {query}")
+            logger.info(f"Generating embedding using model: Marengo-retrieval-2.7")
             embedding_response = client.embed.create(
                 model_name="Marengo-retrieval-2.7",
-                text=query
+                text=formatted_query
             )
             logger.info("Successfully generated query embedding")
+            
+            # Log embedding details if available
+            if hasattr(embedding_response, 'text_embedding'):
+                vector = embedding_response.text_embedding.segments[0].embeddings_float
+                logger.info(f"Embedding generated with {len(vector)} dimensions")
+            else:
+                logger.warning("Embedding response doesn't have expected structure")
         except Exception as e:
             logger.error(f"Error generating embedding: {str(e)}")
             return jsonify({
@@ -183,6 +150,7 @@ def search():
                 'details': str(e)
             }), 500
             
+        # Validate embedding response
         if not embedding_response or not hasattr(embedding_response, 'text_embedding'):
             logger.error("No embedding was generated for the query")
             return jsonify({
@@ -192,185 +160,108 @@ def search():
             
         # Get the embedding vector
         vector = embedding_response.text_embedding.segments[0].embeddings_float
-        logger.debug(f"Generated vector with {len(vector)} dimensions")
         
-        # Search in Qdrant
-        logger.info("Searching Qdrant for similar vectors")
+        # Primary search strategy: vector search in Qdrant
+        logger.info(f"Searching Qdrant collection '{COLLECTION_NAME}' for similar vectors (limit: 10)")
         try:
             search_results = qdrant_client.search(
                 collection_name=COLLECTION_NAME,
                 query_vector=vector,
                 limit=10
             )
-            logger.debug(f"Qdrant search returned {len(search_results)} results")
+            logger.info(f"Qdrant search returned {len(search_results)} results")
             
+            # Log detailed information about each result
             for i, result in enumerate(search_results):
                 logger.debug(f"Result {i+1}: ID={result.id}, Score={result.score}")
                 logger.debug(f"Payload: {json.dumps(result.payload, default=str)}")
-                
+            
         except Exception as e:
             logger.error(f"Qdrant search error: {str(e)}")
-            # Fall back to mock data if search fails
-            logger.info("Using mock data due to search error")
-            mock_results = [
-                {
-                    'video_id': 'ratatouille',
-                    'filename': 'ratatouille.mp4',
-                    'start_time': 0,
-                    'end_time': 30,
-                    'score': 0.95,
-                    'confidence': 'high',
-                    'url': 'https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos-embed/08ff403a-63e7-4188-9eed-3858f4457173_078_🧑‍🍳 Experimenting With Flavors! ｜ Ratatouille ｜ Disney Kids_pwpRSNCdr6w.mp4'
-                },
-                {
-                    'video_id': 'dory',
-                    'filename': 'dory.mp4',
-                    'start_time': 0,
-                    'end_time': 30,
-                    'score': 0.92,
-                    'confidence': 'high',
-                    'url': 'https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos-embed/06c17740-1b34-4af3-b1fc-c8ab586915f7_054_🚤 Dory\'s Next Stop! ｜ Finding Dory ｜ Disney Kids_HaL1PU3hpvY.mp4'
-                },
-                {
-                    'video_id': 'buzz',
-                    'filename': 'buzz.mp4',
-                    'start_time': 0,
-                    'end_time': 30,
-                    'score': 0.9,
-                    'confidence': 'high',
-                    'url': 'https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos-embed/1ba5cedc-9abe-4b2d-b4be-1a9e65bfcd17_001_👨‍🚀 Just Buzz being Buzz_xuWRqYuK5k0.mp4'
-                },
-                {
-                    'video_id': 'bugs-life',
-                    'filename': 'bugs-life.mp4',
-                    'start_time': 0,
-                    'end_time': 30,
-                    'score': 0.88,
-                    'confidence': 'high',
-                    'url': 'https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos-embed/761322bf-fcd4-4041-bce0-aa42319ce0f9_062_🔥 The Show Everyone\'s Excited About! ｜ A Bug\'s Life ｜ Disney Kids_ok3z52oMv8A.mp4'
-                },
-                {
-                    'video_id': 'frozen',
-                    'filename': 'frozen.mp4',
-                    'start_time': 0,
-                    'end_time': 30,
-                    'score': 0.86,
-                    'confidence': 'high',
-                    'url': 'https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos-embed/1203fb1a-ef99-4cc0-a212-8bf1589216ea_044_🗻 Frozen Quest： Can Anna Stop Winter？ ｜ Frozen ｜ Disney Kids_UrrHl9p2XDM.mp4'
-                }
-            ]
-            return jsonify(mock_results)
+            return jsonify({
+                'error': 'Search engine error',
+                'details': str(e)
+            }), 500
             
+        # If no results found, use scroll as fallback strategy
         if not search_results:
-            logger.info("No matching results found")
-            
-            # Try to get any videos from the collection as fallback
+            logger.info("No matching results found, using scroll fallback strategy")
             try:
-                logger.debug("Attempting to get fallback results using scroll")
+                logger.info(f"Executing scroll on collection '{COLLECTION_NAME}' (limit: 10)")
                 fallback_results = qdrant_client.scroll(
                     collection_name=COLLECTION_NAME,
                     limit=10,
                     with_payload=True,
                     with_vectors=False
                 )[0]
+                search_results = fallback_results
+                logger.info(f"Scroll returned {len(fallback_results)} fallback results")
                 
-                logger.debug(f"Scroll returned {len(fallback_results)} fallback results")
+                # Log fallback results
+                for i, result in enumerate(fallback_results):
+                    logger.debug(f"Fallback result {i+1}: ID={result.id}")
+                    logger.debug(f"Fallback payload: {json.dumps(result.payload, default=str)}")
+                
             except Exception as e:
                 logger.error(f"Error getting fallback results: {str(e)}")
-                fallback_results = []
+                return jsonify({
+                    'error': 'Failed to retrieve fallback results',
+                    'details': str(e)
+                }), 500
+        
+        # If still no results, return empty list
+        if not search_results:
+            logger.info("No results found after fallback strategy, returning empty list")
+            return jsonify([])
             
-            if fallback_results:
-                logger.info(f"Using {len(fallback_results)} fallback results")
-                formatted_results = []
-                for point in fallback_results:
-                    try:
-                        if not point.payload:
-                            logger.warning(f"Skipping result with no payload: {point.id}")
-                            continue
-                            
-
-                        result = {
-                            'video_id': point.payload.get('video_id', f"video_{point.id}"),
-                            'filename': point.payload.get('filename', 'unknown.mp4'),
-                            'start_time': float(point.payload.get('start_time', 0)),
-                            'end_time': float(point.payload.get('end_time', 30)),
-                            'score': 0.5, 
-                            'confidence': 'medium'
-                        }
-                        # formatted_results.append(result)
-                        # logger.info(f"Added fallback result: {result['video_id']}")
-                    except Exception as e:
-                        logger.warning(f"Skipping malformed result: {str(e)}")
-                        continue
-                
-                if formatted_results:
-                    return jsonify(formatted_results)
-            
-            logger.info("No valid results found, returning mock data")
-            mock_results = [
-                {
-                    'video_id': 'ratatouille',
-                    'filename': 'ratatouille.mp4',
-                    'start_time': 0,
-                    'end_time': 30,
-                    'score': 0.95,
-                    'confidence': 'high',
-                    'url': 'https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos-embed/08ff403a-63e7-4188-9eed-3858f4457173_078_🧑‍🍳 Experimenting With Flavors! ｜ Ratatouille ｜ Disney Kids_pwpRSNCdr6w.mp4'
-                }
-            ]
-            return jsonify(mock_results)
-            
+        # Format and return the results
         formatted_results = []
         for match in search_results:
             try:
-                # Extract video_url from payload if it exists
-                video_url = None
-                if 'video_url' in match.payload:
-                    video_url = match.payload.get('video_url')
+                # Get filename directly from payload
+                filename = match.payload.get('filename', 'video.mp4')
                 
-                filename = 'unknown.mp4'
-                if 'original_filename' in match.payload:
-                    original_filename = match.payload.get('original_filename')
-                    if original_filename:
-                        # Extract just the base name without special characters
-                        import re
-                        clean_name = re.sub(r'[^\w\s.-]', '', original_filename.split('_')[-1])
-                        filename = clean_name if clean_name else 'disney-video.mp4'
+                # Extract video_url from payload
+                video_url = match.payload.get('video_url')
                 
-                # Create the result object with the URL
+                # Get match score (if from search) or default to 0.5 (if from scroll)
+                score = float(getattr(match, 'score', 0.5))
+                confidence = 'high' if score > 0.7 else 'medium'
+                
+                # Create the result object
                 result = {
                     'video_id': match.payload.get('video_id', f"video_{match.id}"),
                     'filename': filename,
                     'start_time': float(match.payload.get('start_time', 0)),
                     'end_time': float(match.payload.get('end_time', 30)),
-                    'score': float(match.score),
-                    'confidence': 'high' if float(match.score) > 0.7 else 'medium',
-                    'url': video_url 
+                    'score': score,
+                    'confidence': confidence,
+                    'url': video_url
                 }
                 formatted_results.append(result)
-                logger.debug(f"Added result: {result['filename']} with score {result['score']} and URL: {video_url}")
+                
+                # Log each formatted result
+                logger.info(f"Formatted result: video_id={result['video_id']}, "
+                           f"filename={result['filename']}, score={result['score']}, "
+                           f"confidence={result['confidence']}")
+                
             except Exception as e:
                 logger.warning(f"Skipping malformed result: {str(e)}")
                 continue
-                
-        logger.info(f"Returning {len(formatted_results)} results")
+
+        # Log the final list of results
+        logger.info(f"Returning {len(formatted_results)} results to client")
+        logger.debug(f"Complete result set: {json.dumps(formatted_results, default=str)}")
+        
         return jsonify(formatted_results)
+        
     except Exception as e:
         logger.exception("Unexpected error during search:")
-        mock_results = [
-            {
-                'video_id': 'ratatouille',
-                'filename': 'ratatouille.mp4',
-                'start_time': 0,
-                'end_time': 30,
-                'score': 0.95,
-                'confidence': 'high',
-                'url': 'https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos-embed/08ff403a-63e7-4188-9eed-3858f4457173_078_🧑‍🍳 Experimenting With Flavors! ｜ Ratatouille ｜ Disney Kids_pwpRSNCdr6w.mp4'
-            }
-        ]
-        logger.info("Returning mock data due to error")
-        return jsonify(mock_results)
-
+        return jsonify({
+            'error': 'Internal server error',
+            'details': str(e)
+        }), 500
+    
 try:
     init_qdrant()
 except Exception as e:
