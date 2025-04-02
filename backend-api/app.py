@@ -103,120 +103,86 @@ def health_check():
 # Endpoint for searching video segments based on pereferenc/mood - text query
 @app.route('/search', methods=['POST'])
 def search():
+    # Ensure the request contains JSON data
+    if not request.is_json:
+        logger.warning("Request is not JSON format")
+        return jsonify({
+            'error': 'Request must be JSON format',
+            'details': 'Please provide a JSON body with a query parameter'
+        }), 400
+        
+    data = request.get_json()
+    query = data.get('query')
+    if not query:
+        logger.warning("Missing query parameter")
+        return jsonify({
+            'error': 'Missing query parameter',
+            'details': 'Please provide a search query'
+        }), 400
+        
+    # Logging Original query
+    logger.info(f"Original search query: {query}")
+    
+    # Format the query for embedding
+    formatted_query = f"Provide the relevant content of the genre and the mood of - {query}"
+    logger.info(f"Formatted query for embedding: {formatted_query}")
+    
     try:
-        # Ensure the request contains JSON data
-        if not request.is_json:
-            logger.warning("Request is not JSON format")
-            return jsonify({
-                'error': 'Request must be JSON format',
-                'details': 'Please provide a JSON body with a query parameter'
-            }), 400
-            
-        data = request.get_json()
-        query = data.get('query')
-        if not query:
-            logger.warning("Missing query parameter")
-            return jsonify({
-                'error': 'Missing query parameter',
-                'details': 'Please provide a search query'
-            }), 400
-            
-        # Log the original query
-        logger.info(f"Original search query: {query}")
-        
-        # Format the query for embedding
-        formatted_query = f"Provide the relevant content of the genre and the mood of - {query}"
-        logger.info(f"Formatted query for embedding: {formatted_query}")
-        
         # Generate embedding for the search query
-        try:
-            logger.info(f"Generating embedding using model: Marengo-retrieval-2.7")
-            embedding_response = client.embed.create(
-                model_name="Marengo-retrieval-2.7",
-                text=formatted_query
-            )
-            
-            # Get the embedding vector
-            vector = embedding_response.text_embedding.segments[0].embeddings_float
-            logger.info(f"Successfully generated embedding with {len(vector)} dimensions")
-        except Exception as e:
-            logger.error(f"Error generating embedding: {str(e)}")
-            return jsonify({
-                'error': 'Failed to process search query',
-                'details': str(e)
-            }), 500
+        logger.info(f"Generating embedding using model: Marengo-retrieval-2.7")
+        embedding_response = client.embed.create(
+            model_name="Marengo-retrieval-2.7",
+            text=formatted_query
+        )
         
-        # Similarity Search in Qdrant
-        logger.info(f"Searching Qdrant collection '{COLLECTION_NAME}' for similar vectors")
-        try:
-            # Execute vector search
-            # query_response = qdrant_client.query_points(
-            #     collection_name=COLLECTION_NAME,
-            #     query=vector,
-            #     limit=10,
-            #     with_payload=True
-            # )
-            
-            # Access the points attribute of the response object
-            # search_results = query_response.points
-            logger.info(f"Vector search returned {len(search_results)} results")
-            
-            # If no results from vector search, try scroll as fallback
-            if not search_results:
-                logger.info("No vector search results, using scroll as fallback")
-                scroll_response = qdrant_client.scroll(
-                    collection_name=COLLECTION_NAME,
-                    limit=10,
-                    with_payload=True
-                )
-                
-                # Properly handle the scroll response which is a tuple (points, offset)
-                fallback_results, next_offset = scroll_response
-                search_results = fallback_results
-                
-                logger.info(f"Scroll fallback returned {len(search_results)} results")
-            
-        except Exception as e:
-            logger.error(f"Qdrant search error: {str(e)}")
-            return jsonify({
-                'error': 'Search engine error',
-                'details': str(e)
-            }), 500
+        # Get the embedding vector
+        vector = embedding_response.text_embedding.segments[0].embeddings_float
+        logger.info(f"Successfully generated embedding with {len(vector)} dimensions")
         
-        # If still no results, return empty list
-        if not search_results:
-            logger.info("No results found, returning empty list")
+        # Execute vector search
+        logger.info(f"Executing search in collection '{COLLECTION_NAME}'")
+        query_response = qdrant_client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=vector,
+            limit=10,
+            with_payload=True
+        )
+        
+        # Extract search results
+        if hasattr(query_response, 'points'):
+            search_results = query_response.points
+            logger.info(f"Found {len(search_results)} matching results")
+        else:
+            logger.warning("Unexpected response format from Qdrant")
             return jsonify([])
-            
-        # Log the type of the first result to help with debugging
-        if search_results:
-            logger.debug(f"First result type: {type(search_results[0])}")
-            logger.debug(f"First result attributes: {dir(search_results[0])}")
         
-        # Format and return the results
+        # If no results, return empty list
+        if not search_results:
+            logger.info("No matching content found")
+            return jsonify([])
+        
+        # Format the results
         formatted_results = []
         
-        for result in search_results:
-            # ScoredPoint objects have id, score, and payload attributes
+        for i, result in enumerate(search_results):
+            # Get basic result data
             point_id = result.id
             score = float(result.score)
             payload = result.payload
             
-            logger.debug(f"Processing result ID={point_id} with score={score}")
+            logger.debug(f"Result {i+1}: ID={point_id}, Score={score:.4f}")
             
-            # Extract required fields from payload
+            # Extract result fields
             video_id = payload.get('video_id', f"video_{point_id}")
             filename = payload.get('original_filename', payload.get('filename', 'video.mp4'))
             video_url = payload.get('video_url')
-            
-            # Get start and end times with defaults
             start_time = float(payload.get('start_time', 0))
             end_time = float(payload.get('end_time', 30))
             
             # Determine confidence level
             confidence = 'high' if score > 0.7 else 'medium'
             
-            # Create the result object
+            # Build result object
             result_item = {
                 'video_id': video_id,
                 'filename': filename,
@@ -228,25 +194,19 @@ def search():
             }
             
             formatted_results.append(result_item)
-            logger.info(f"Added result: video_id={video_id}, score={score:.4f}")
+            logger.info(f"Added result {i+1}: {video_id} (score: {score:.4f})")
         
-        total_results = len(formatted_results)
-        logger.info(f"Returning {total_results} results to client")
-        
-        if total_results > 0:
-            # Log top result score for monitoring quality
-            top_score = formatted_results[0]['score']
-            logger.info(f"Top result score: {top_score:.4f}")
-        
+        # Log summary
+        logger.info(f"Returning {len(formatted_results)} results")
         return jsonify(formatted_results)
         
     except Exception as e:
-        logger.exception("Unexpected error during search:")
+        logger.exception(f"Error during search: {str(e)}")
         return jsonify({
-            'error': 'Internal server error',
+            'error': 'Search failed',
             'details': str(e)
         }), 500
-
+    
 
 
 try:
