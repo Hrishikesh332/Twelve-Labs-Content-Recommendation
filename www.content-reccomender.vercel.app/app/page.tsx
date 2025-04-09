@@ -210,15 +210,6 @@ export default function Home() {
               </div>
 
               <div className="flex items-center gap-x-6 text-xs">
-                <Link href="/about" className="text-[#1D1C1B]/70 hover:text-[#1D1C1B] transition-colors">
-                  About
-                </Link>
-                <Link href="/privacy" className="text-[#1D1C1B]/70 hover:text-[#1D1C1B] transition-colors">
-                  Privacy
-                </Link>
-                <Link href="/terms" className="text-[#1D1C1B]/70 hover:text-[#1D1C1B] transition-colors">
-                  Terms
-                </Link>
                <div className="flex space-x-3 ml-2">
                   {["website", "twitter", "github"].map((social) => (
                     <a
@@ -261,15 +252,18 @@ export default function Home() {
             </div>
           </div>
         </footer>
-        {/* Coming Soon Dialog */}
+
         <ComingSoonDialog
           isOpen={showComingSoonDialog}
           onClose={() => setShowComingSoonDialog(false)}
-          title="Coming Soon!"
-          description="The 'How It Works' feature is currently under development and will be released soon. Stay tuned for updates!"
+          title="How It Works"
+          videoUrl="https://www.youtube.com/embed/0JOK1D6muIw?si=M7J1ZNMBtlPP27mi"
         />
       </div>
     </div>
   )
 }
+
+
+
 
