@@ -9,16 +9,10 @@ import { DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from "@/compon
 interface StyleSelectorProps {
   onClose: () => void
   onChangePreferences?: (theme?: string, mood?: string, showSearchForm?: boolean) => void
-  initialTheme?: string
   initialMood?: string
 }
 
-export default function StyleSelector({
-  onClose,
-  onChangePreferences,
-  initialTheme = "",
-  initialMood = "",
-}: StyleSelectorProps) {
+export default function StyleSelector({ onClose, onChangePreferences, initialMood = "" }: StyleSelectorProps) {
   const [mood, setMood] = useState(initialMood)
 
   // Update local state when props change
@@ -60,16 +54,11 @@ export default function StyleSelector({
               <SelectValue placeholder="Choose an option" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="adventure">Adventure - Exciting Journeys & Quests</SelectItem>
               <SelectItem value="comedy">Comedy - Humorous & Lighthearted</SelectItem>
               <SelectItem value="fantasy">Fantasy - Magical & Enchanting</SelectItem>
-              <SelectItem value="family">Family - All-Ages Entertainment</SelectItem>
               <SelectItem value="action">Action - Fast-Paced & Thrilling</SelectItem>
-              <SelectItem value="emotional">Emotional - Heartfelt & Moving</SelectItem>
               <SelectItem value="musical">Musical - Song & Dance Features</SelectItem>
               <SelectItem value="magical">Magical - Enchanted & Supernatural</SelectItem>
-              <SelectItem value="nostalgic">Nostalgic - Reminiscent & Classic</SelectItem>
-              <SelectItem value="epic">Epic - Grand Scale & Heroic</SelectItem>
             </SelectContent>
           </Select>
         </div>

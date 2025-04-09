@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { Drawer } from "@/components/ui/drawer"
 import { Button } from "@/components/ui/button"
 import { Settings, Search, ArrowUp, ArrowDown } from "lucide-react"
@@ -403,7 +403,7 @@ export default function ExplorePage() {
     setShowRecommendationForm(false)
   }
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (currentIndex < videos.length - 1 && !isTransitioning) {
       setIsTransitioning(true)
       setSwipeDirection("up")
@@ -416,9 +416,9 @@ export default function ExplorePage() {
         }, 50)
       }, 300)
     }
-  }
+  }, [currentIndex, videos.length, isTransitioning])
 
-  const handlePrevious = () => {
+  const handlePrevious = useCallback(() => {
     if (currentIndex > 0 && !isTransitioning) {
       setIsTransitioning(true)
       setSwipeDirection("down")
@@ -431,7 +431,7 @@ export default function ExplorePage() {
         }, 50)
       }, 300)
     }
-  }
+  }, [currentIndex, isTransitioning])
 
   // Touch handlers for swipe gestures - improved for better detection
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -493,7 +493,7 @@ export default function ExplorePage() {
 
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [currentIndex, videos.length])
+  }, [handleNext, handlePrevious])
 
   // Get current video with fallback
   const currentVideo = videos.length > 0 ? videos[currentIndex] : null
@@ -572,7 +572,7 @@ export default function ExplorePage() {
                     <SelectValue placeholder="Choose a category" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="sci-fi">Sci-Fi - Futuristic & Technology-Based</SelectItem>
+                  <SelectItem value="sci-fi">Sci-Fi - Futuristic & Technology-Based</SelectItem>
                     <SelectItem value="cartoon">Cartoon - Stylized Short-Form Animation</SelectItem>
                     <SelectItem value="kids">Kids - Educational & Child-Friendly</SelectItem>
                     <SelectItem value="family">Family - All-Ages Entertainment</SelectItem>
@@ -713,7 +713,6 @@ export default function ExplorePage() {
               <StyleSelector
                 onClose={() => setIsDrawerOpen(false)}
                 onChangePreferences={handleStyleChange}
-                initialTheme={theme}
                 initialMood={mood}
               />
             </Drawer>
