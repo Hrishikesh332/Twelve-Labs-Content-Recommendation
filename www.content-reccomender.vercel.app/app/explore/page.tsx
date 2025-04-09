@@ -198,6 +198,8 @@ export default function ExplorePage() {
 
   const [isVideoPlaying, setIsVideoPlaying] = useState(true)
 
+  // Show swipe instruction when a new video loads or when changing videos
+
   // Debug logging for API calls
   const logApiCall = (method: string, url: string, body: Record<string, unknown>) => {
     console.log(`API ${method} to ${url}:`, body)
@@ -249,12 +251,13 @@ export default function ExplorePage() {
 
       // Log the API call we're about to make
       const requestBody = { query: freshQuery }
-      console.log("URL ",`${process.env.NEXT_PUBLIC_URL}/search` || '')
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
+      console.log("Using API URL:", apiUrl)
 
-      logApiCall("POST", `${process.env.NEXT_PUBLIC_URL}/search` || '', requestBody)
+      logApiCall("POST", `${apiUrl}/search`, requestBody)
 
-      // fetch from backend
-      const response = await fetch(`${process.env.NEXT_PUBLIC_URL}/search` || '', {
+      // Try to fetch from backend
+      const response = await fetch(`${apiUrl}/search`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -332,7 +335,7 @@ export default function ExplorePage() {
 
         setVideos([...customFallbacks, ...disneyVideos])
         setCurrentIndex(0) // Reset to first video
-        setError(`Using ${category} videos with animated content`)
+        setError(`Using ${category} videos with Disney content`)
       } else if (themeValue) {
         const lowerTheme = themeValue.toLowerCase()
         if (Object.prototype.hasOwnProperty.call(categoryFallbacks, lowerTheme)) {
@@ -569,16 +572,13 @@ export default function ExplorePage() {
                     <SelectValue placeholder="Choose a category" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="animation">Animation - General Animated Content</SelectItem>
                     <SelectItem value="sci-fi">Sci-Fi - Futuristic & Technology-Based</SelectItem>
-                    <SelectItem value="kids">Kids - Educational & Child-Friendly</SelectItem>
-                    <SelectItem value="anime">Anime - Japanese Animation Style</SelectItem>
                     <SelectItem value="cartoon">Cartoon - Stylized Short-Form Animation</SelectItem>
+                    <SelectItem value="kids">Kids - Educational & Child-Friendly</SelectItem>
                     <SelectItem value="family">Family - All-Ages Entertainment</SelectItem>
                     <SelectItem value="adventure">Adventure - Exciting Journeys & Quests</SelectItem>
-                    <SelectItem value="comedy">Comedy - Humorous & Lighthearted</SelectItem>
                     <SelectItem value="fantasy">Fantasy - Magical Worlds & Creatures</SelectItem>
-                    
+
                   </SelectContent>
                 </Select>
               </div>
@@ -616,12 +616,7 @@ export default function ExplorePage() {
           <>
             {/* Main content layout with portrait video container - centered */}
             <div className="relative w-full max-w-md mx-auto flex flex-col items-center justify-center">
-              {/* Swipe instruction - now above the video
-              <div className="mb-4 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-md">
-                <p className="text-sm font-medium text-gray-800">Swipe up/down to change videos</p>
-              </div> */}
-
-              {/* Video navigation indicator - repositioned */}
+              {/* Video navigation indicator */}
               <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full shadow-md">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium">{currentIndex + 1}</span>
@@ -701,6 +696,17 @@ export default function ExplorePage() {
               </Button>
             </div>
 
+            {/* New Search button - ADDED TO RIGHT */}
+            <div className="fixed bottom-6 right-6 z-50">
+              <Button
+                variant="outline"
+                className="bg-white text-gray-800 hover:bg-gray-50 shadow-md"
+                onClick={resetSearch}
+              >
+                <Search className="mr-2 h-4 w-4" />
+                New Search
+              </Button>
+            </div>
 
             {/* Style selector drawer */}
             <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
@@ -734,4 +740,3 @@ export default function ExplorePage() {
     </div>
   )
 }
-

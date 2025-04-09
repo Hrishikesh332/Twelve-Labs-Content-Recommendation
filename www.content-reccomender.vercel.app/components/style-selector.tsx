@@ -19,20 +19,18 @@ export default function StyleSelector({
   initialTheme = "",
   initialMood = "",
 }: StyleSelectorProps) {
-  const [theme, setTheme] = useState(initialTheme)
   const [mood, setMood] = useState(initialMood)
 
   // Update local state when props change
   useEffect(() => {
-    setTheme(initialTheme)
     setMood(initialMood)
-  }, [initialTheme, initialMood])
+  }, [initialMood])
 
   const handleSubmit = () => {
-    console.log("Selected preferences:", { theme, mood })
-    // Call the onChangePreferences callback to update videos with the new theme and mood
+    console.log("Selected preferences:", { mood })
+    // Call the onChangePreferences callback to update videos with the mood
     if (onChangePreferences) {
-      onChangePreferences(theme, mood)
+      onChangePreferences(undefined, mood)
     } else {
       onClose()
     }
@@ -41,10 +39,10 @@ export default function StyleSelector({
   // Update the handleNewSearch function to properly reset and show the search form
   const handleNewSearch = () => {
     console.log("Resetting preferences and starting new search")
-    // Reset theme and mood and trigger new search
+    // Reset mood and trigger new search
     if (onChangePreferences) {
-      // Pass empty strings to reset theme and mood, and add a special flag to show the search form
-      onChangePreferences("", "", true)
+      // Pass empty strings to reset mood, and add a special flag to show the search form
+      onChangePreferences(undefined, "", true)
     }
     onClose()
   }
@@ -55,25 +53,6 @@ export default function StyleSelector({
         <DrawerTitle className="text-gray-900 text-center text-xl">Choose your Style</DrawerTitle>
       </DrawerHeader>
       <div className="p-6 space-y-6">
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">Theme</label>
-          <Select value={theme} onValueChange={setTheme}>
-            <SelectTrigger className="border-gray-300 focus:ring-[#00E21B] focus:border-[#00E21B]">
-              <SelectValue placeholder="Choose an option" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="animation">Animation - General Animated Content</SelectItem>
-              <SelectItem value="3d-animation">3D Animation - Computer-Generated Graphics</SelectItem>
-              <SelectItem value="traditional-animation">Traditional - Hand-Drawn Style</SelectItem>
-              <SelectItem value="stop-motion">Stop Motion - Frame-by-Frame Animation</SelectItem>
-              <SelectItem value="anime">Anime - Japanese Animation Style</SelectItem>
-              <SelectItem value="cartoon">Cartoon - Stylized Short-Form</SelectItem>
-              <SelectItem value="fantasy">Fantasy - Magical Worlds & Creatures</SelectItem>
-              <SelectItem value="sci-fi">Sci-Fi - Futuristic & Technology-Based</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
         <div className="space-y-2">
           <label className="text-sm font-medium text-gray-700">Mood</label>
           <Select value={mood} onValueChange={setMood}>
@@ -117,4 +96,3 @@ export default function StyleSelector({
     </DrawerContent>
   )
 }
-

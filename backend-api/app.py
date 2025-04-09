@@ -124,7 +124,7 @@ def search():
     logger.info(f"Original search query: {query}")
     
     # Format the query for embedding
-    formatted_query = f"Provide the relevant content of the genre and the mood of - {query}"
+    formatted_query = f"Recommend: {query}"
     logger.info(f"Formatted query for embedding: {formatted_query}")
     
     try:
