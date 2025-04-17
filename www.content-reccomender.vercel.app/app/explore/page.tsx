@@ -695,17 +695,7 @@ export default function ExplorePage() {
               </Button>
             </div>
 
-            {/* New Search button - ADDED TO RIGHT */}
-            <div className="fixed bottom-6 right-6 z-50">
-              <Button
-                variant="outline"
-                className="bg-white text-gray-800 hover:bg-gray-50 shadow-md"
-                onClick={resetSearch}
-              >
-                <Search className="mr-2 h-4 w-4" />
-                New Search
-              </Button>
-            </div>
+
 
             {/* Style selector drawer */}
             <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
