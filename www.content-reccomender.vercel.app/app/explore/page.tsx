@@ -251,13 +251,12 @@ export default function ExplorePage() {
 
       // Log the API call we're about to make
       const requestBody = { query: freshQuery }
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
-      console.log("Using API URL:", apiUrl)
+      console.log("URL ",`${process.env.NEXT_PUBLIC_URL}/search` || '')
 
-      logApiCall("POST", `${apiUrl}/search`, requestBody)
+      logApiCall("POST", `${process.env.NEXT_PUBLIC_URL}/search` || '', requestBody)
 
       // Try to fetch from backend
-      const response = await fetch(`${apiUrl}/search`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_URL}/search` || '', {{
         method: "POST",
         headers: {
           "Content-Type": "application/json",
