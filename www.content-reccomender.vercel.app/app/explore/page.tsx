@@ -254,10 +254,10 @@ export default function ExplorePage() {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
       console.log("Using API URL:", apiUrl)
 
-      logApiCall("POST", `${process.env.NEXT_PUBLIC_API_URL}/search` || "", requestBody)
+      logApiCall("POST", `${apiUrl}/search`, requestBody)
 
       // Try to fetch from backend
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/search` || "", {
+      const response = await fetch(`${apiUrl}/search`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -607,21 +607,13 @@ export default function ExplorePage() {
               </div>
 
               <Button onClick={handleSearch} className="w-full bg-[#00E21B] text-black hover:bg-[#00E21B]/90">
-                        handleSearch()
-                      }
-                    }}
-                  />
-                </div>
-              </div>
-
-              <Button onClick={handleSearch} className="w-full bg-[#00E21B] text-black hover:bg-[#00E21B]/90">
                 <Search className="mr-2 h-4 w-4" />
                 Find Videos
               </Button>
             </div>
           </div>
         ) : isLoading ? (
-          <div className="flex flex-col items-center justify-center">ms-center justify-center">
+          <div className="flex flex-col items-center justify-center">
             <div className="w-16 h-16 border-4 border-gray-300 border-t-[#00E21B] rounded-full animate-spin mb-4" />
             <p className="text-lg text-gray-800">Loading videos...</p>
           </div>
@@ -749,6 +741,6 @@ export default function ExplorePage() {
           </div>
         )}
       </div>
-  </div>
+    </div>
   )
 }
