@@ -251,12 +251,13 @@ export default function ExplorePage() {
 
       // Log the API call we're about to make
       const requestBody = { query: freshQuery }
-      console.log("URL ",`${process.env.NEXT_PUBLIC_URL}/search` || '')
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
+      console.log("Using API URL:", apiUrl)
 
-      logApiCall("POST", `${process.env.NEXT_PUBLIC_URL}/search` || '', requestBody)
+      logApiCall("POST", `${process.env.NEXT_PUBLIC_API_URL}/search` || "", requestBody)
 
       // Try to fetch from backend
-      const response = await fetch(`${process.env.NEXT_PUBLIC_URL}/search` || '', {{
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/search` || "", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -571,13 +572,18 @@ export default function ExplorePage() {
                     <SelectValue placeholder="Choose a category" />
                   </SelectTrigger>
                   <SelectContent>
-                  <SelectItem value="sci-fi">Sci-Fi - Futuristic & Technology-Based</SelectItem>
+                    <SelectItem value="animation">Animation - General Animated Content</SelectItem>
+                    <SelectItem value="3d-animation">3D Animation - Computer-Generated Graphics</SelectItem>
+                    <SelectItem value="traditional-animation">Traditional Animation - Hand-Drawn Style</SelectItem>
+                    <SelectItem value="stop-motion">Stop Motion - Frame-by-Frame Physical Animation</SelectItem>
+                    <SelectItem value="anime">Anime - Japanese Animation Style</SelectItem>
                     <SelectItem value="cartoon">Cartoon - Stylized Short-Form Animation</SelectItem>
                     <SelectItem value="kids">Kids - Educational & Child-Friendly</SelectItem>
                     <SelectItem value="family">Family - All-Ages Entertainment</SelectItem>
                     <SelectItem value="adventure">Adventure - Exciting Journeys & Quests</SelectItem>
+                    <SelectItem value="comedy">Comedy - Humorous & Lighthearted</SelectItem>
                     <SelectItem value="fantasy">Fantasy - Magical Worlds & Creatures</SelectItem>
-
+                    <SelectItem value="sci-fi">Sci-Fi - Futuristic & Technology-Based</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -601,13 +607,21 @@ export default function ExplorePage() {
               </div>
 
               <Button onClick={handleSearch} className="w-full bg-[#00E21B] text-black hover:bg-[#00E21B]/90">
+                        handleSearch()
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+
+              <Button onClick={handleSearch} className="w-full bg-[#00E21B] text-black hover:bg-[#00E21B]/90">
                 <Search className="mr-2 h-4 w-4" />
                 Find Videos
               </Button>
             </div>
           </div>
         ) : isLoading ? (
-          <div className="flex flex-col items-center justify-center">
+          <div className="flex flex-col items-center justify-center">ms-center justify-center">
             <div className="w-16 h-16 border-4 border-gray-300 border-t-[#00E21B] rounded-full animate-spin mb-4" />
             <p className="text-lg text-gray-800">Loading videos...</p>
           </div>
@@ -695,7 +709,17 @@ export default function ExplorePage() {
               </Button>
             </div>
 
-
+            {/* New Search button - ADDED TO RIGHT */}
+            <div className="fixed bottom-6 right-6 z-50">
+              <Button
+                variant="outline"
+                className="bg-white text-gray-800 hover:bg-gray-50 shadow-md"
+                onClick={resetSearch}
+              >
+                <Search className="mr-2 h-4 w-4" />
+                New Search
+              </Button>
+            </div>
 
             {/* Style selector drawer */}
             <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
@@ -725,6 +749,6 @@ export default function ExplorePage() {
           </div>
         )}
       </div>
-    </div>
+  </div>
   )
 }
