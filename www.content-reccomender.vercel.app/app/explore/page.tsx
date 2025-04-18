@@ -572,17 +572,14 @@ export default function ExplorePage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="animation">Animation - General Animated Content</SelectItem>
-                    <SelectItem value="3d-animation">3D Animation - Computer-Generated Graphics</SelectItem>
-                    <SelectItem value="traditional-animation">Traditional Animation - Hand-Drawn Style</SelectItem>
-                    <SelectItem value="stop-motion">Stop Motion - Frame-by-Frame Physical Animation</SelectItem>
+                    <SelectItem value="sci-fi">Sci-Fi - Futuristic & Technology-Based</SelectItem>
+                    <SelectItem value="kids">Kids - Educational & Child-Friendly</SelectItem>
                     <SelectItem value="anime">Anime - Japanese Animation Style</SelectItem>
                     <SelectItem value="cartoon">Cartoon - Stylized Short-Form Animation</SelectItem>
-                    <SelectItem value="kids">Kids - Educational & Child-Friendly</SelectItem>
                     <SelectItem value="family">Family - All-Ages Entertainment</SelectItem>
                     <SelectItem value="adventure">Adventure - Exciting Journeys & Quests</SelectItem>
                     <SelectItem value="comedy">Comedy - Humorous & Lighthearted</SelectItem>
                     <SelectItem value="fantasy">Fantasy - Magical Worlds & Creatures</SelectItem>
-                    <SelectItem value="sci-fi">Sci-Fi - Futuristic & Technology-Based</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -697,18 +694,6 @@ export default function ExplorePage() {
               >
                 <Settings className="mr-2 h-4 w-4" />
                 Change Preferences
-              </Button>
-            </div>
-
-            {/* New Search button - ADDED TO RIGHT */}
-            <div className="fixed bottom-6 right-6 z-50">
-              <Button
-                variant="outline"
-                className="bg-white text-gray-800 hover:bg-gray-50 shadow-md"
-                onClick={resetSearch}
-              >
-                <Search className="mr-2 h-4 w-4" />
-                New Search
               </Button>
             </div>
 
