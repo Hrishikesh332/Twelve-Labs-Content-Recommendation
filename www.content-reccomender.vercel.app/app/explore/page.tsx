@@ -571,15 +571,13 @@ export default function ExplorePage() {
                     <SelectValue placeholder="Choose a category" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="animation">Animation - General Animated Content</SelectItem>
                     <SelectItem value="sci-fi">Sci-Fi - Futuristic & Technology-Based</SelectItem>
-                    <SelectItem value="kids">Kids - Educational & Child-Friendly</SelectItem>
-                    <SelectItem value="anime">Anime - Japanese Animation Style</SelectItem>
                     <SelectItem value="cartoon">Cartoon - Stylized Short-Form Animation</SelectItem>
+                    <SelectItem value="kids">Kids - Educational & Child-Friendly</SelectItem>
                     <SelectItem value="family">Family - All-Ages Entertainment</SelectItem>
                     <SelectItem value="adventure">Adventure - Exciting Journeys & Quests</SelectItem>
-                    <SelectItem value="comedy">Comedy - Humorous & Lighthearted</SelectItem>
                     <SelectItem value="fantasy">Fantasy - Magical Worlds & Creatures</SelectItem>
+
                   </SelectContent>
                 </Select>
               </div>
