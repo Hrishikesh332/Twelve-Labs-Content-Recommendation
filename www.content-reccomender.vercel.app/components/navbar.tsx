@@ -44,7 +44,7 @@ export default function Navbar() {
     { name: "Home", path: "/" },
     { name: "Explore", path: "/explore" },
     { name: "Features", path: "/#features" },
-    { name: "Blog", path: "/blog" },
+    { name: "Blog", path: "https://www.twelvelabs.io/blog/content-recommender", external: true },
   ]
 
   // Function to handle smooth scrolling for hash links
