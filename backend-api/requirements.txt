@@ -1,6 +1,6 @@
 flask
 python-dotenv
-twelvelabs
+twelvelabs==0.4.11
 qdrant-client
 Werkzeug
 requests
