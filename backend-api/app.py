@@ -39,6 +39,9 @@ AWS_BUCKET_NAME = os.getenv('AWS_BUCKET_NAME')
 AWS_REGION = os.getenv('AWS_REGION')
 AWS_S3_PUBLIC_READ = os.getenv('AWS_S3_PUBLIC_READ', 'false').lower() == 'true'
 S3_PUBLIC_BASE_URL = os.getenv('S3_PUBLIC_BASE_URL')
+PRESIGN_S3_PLAYBACK_URLS = os.getenv(
+    'PRESIGN_S3_PLAYBACK_URLS', 'false'
+).lower() == 'true'
 S3_PLAYBACK_URL_EXPIRATION_SECONDS = int(
     os.getenv('S3_PLAYBACK_URL_EXPIRATION_SECONDS', '3600')
 )
@@ -73,7 +76,7 @@ def build_qdrant_url(host_or_url):
 
 
 def build_s3_client():
-    if not AWS_REGION:
+    if not PRESIGN_S3_PLAYBACK_URLS or not AWS_REGION:
         return None
 
     profile = os.getenv("AWS_PROFILE")
@@ -100,12 +103,19 @@ def build_public_object_url(bucket_name, region, key):
     return f"https://{bucket_name}.s3.{region}.amazonaws.com/{encoded_key}"
 
 
+def is_http_url(value):
+    return isinstance(value, str) and value.startswith(("http://", "https://"))
+
+
 def get_public_video_url(s3_key, stored_video_url):
+    if is_http_url(stored_video_url):
+        return stored_video_url
+
     if S3_PUBLIC_BASE_URL:
         encoded_key = quote(s3_key, safe="/")
         return f"{S3_PUBLIC_BASE_URL.rstrip('/')}/{encoded_key}"
 
-    if AWS_S3_PUBLIC_READ and AWS_BUCKET_NAME and AWS_REGION:
+    if AWS_BUCKET_NAME and AWS_REGION:
         return build_public_object_url(AWS_BUCKET_NAME, AWS_REGION, s3_key)
 
     return stored_video_url
@@ -119,10 +129,10 @@ def get_video_delivery_url(payload):
         return stored_video_url
 
     public_video_url = get_public_video_url(s3_key, stored_video_url)
-    if public_video_url and (AWS_S3_PUBLIC_READ or S3_PUBLIC_BASE_URL):
+    if is_http_url(public_video_url):
         return public_video_url
 
-    if s3_client and AWS_BUCKET_NAME:
+    if PRESIGN_S3_PLAYBACK_URLS and s3_client and AWS_BUCKET_NAME:
         try:
             return s3_client.generate_presigned_url(
                 'get_object',
