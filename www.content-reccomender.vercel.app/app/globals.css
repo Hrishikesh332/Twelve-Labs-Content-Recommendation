@@ -45,6 +45,10 @@
 }
 
 :root {
+  --font-geist-sans:
+    "Avenir Next", "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-geist-mono:
+    "SFMono-Regular", "SF Mono", "Menlo", "Monaco", "Cascadia Code", "Liberation Mono", "Courier New", monospace;
   --radius: 0.625rem;
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.13 0.028 261.692);
