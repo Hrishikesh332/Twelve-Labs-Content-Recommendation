@@ -94,10 +94,10 @@ export default function Home() {
                 <div className="p-6">
                   <h3 className="text-xl font-bold text-[#1D1C1B] mb-2">Smart Recommendations</h3>
                   <p className="text-[#1D1C1B]/80 text-sm">
-                  Marengo retreival 2.7 embedded content discovery from Qdrant that learns from your preferences and viewing habits.
+                  Marengo 3.0 multimodal embeddings power Qdrant-based content discovery that learns from your preferences and viewing habits.
                   </p>
                   <Link
-                    href="https://www.twelvelabs.io/blog/introducing-marengo-2-7"
+                    href="https://www.twelvelabs.io/blog/video-intelligence-transforms-storage-costs-into-strategic-assets"
                     className="mt-4 inline-flex items-center text-[#00E21B] font-medium hover:text-[#00E21B]/80 text-sm"
                   >
                     Learn more <ArrowRight className="ml-1 h-3.5 w-3.5" />
@@ -263,7 +263,6 @@ export default function Home() {
     </div>
   )
 }
-
 
 
 

@@ -1,8 +1,10 @@
 from flask import Flask, request, jsonify, send_file
+import boto3
 from twelvelabs import TwelveLabs
 from qdrant_client import QdrantClient
 from qdrant_client.models import VectorParams, Distance, PointStruct
 import os
+from importlib import metadata
 
 import requests
 from dotenv import load_dotenv
@@ -11,6 +13,7 @@ import logging
 from werkzeug.utils import secure_filename
 import json
 from flask_cors import CORS
+from urllib.parse import quote
 
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -30,8 +33,18 @@ logger = logging.getLogger(__name__)
 
 # Load API keys from environment variables
 API_KEY = os.getenv('API_KEY')
-QDRANT_HOST = os.getenv('QDRANT_HOST')
+QDRANT_HOST = os.getenv('QDRANT_HOST') or os.getenv('QDRANT_URL')
 QDRANT_API_KEY = os.getenv('QDRANT_API_KEY')
+AWS_BUCKET_NAME = os.getenv('AWS_BUCKET_NAME')
+AWS_REGION = os.getenv('AWS_REGION')
+AWS_S3_PUBLIC_READ = os.getenv('AWS_S3_PUBLIC_READ', 'false').lower() == 'true'
+S3_PUBLIC_BASE_URL = os.getenv('S3_PUBLIC_BASE_URL')
+S3_PLAYBACK_URL_EXPIRATION_SECONDS = int(
+    os.getenv('S3_PLAYBACK_URL_EXPIRATION_SECONDS', '3600')
+)
+RECREATE_COLLECTION_ON_VECTOR_MISMATCH = os.getenv(
+    'RECREATE_COLLECTION_ON_VECTOR_MISMATCH', 'false'
+).lower() == 'true'
 
 if not API_KEY:
     raise ValueError("API_KEY environment variable is not set")
@@ -46,17 +59,112 @@ app.config.update(
 )
 
 # Qdrant Configuration
-COLLECTION_NAME = "content_collection"
-VECTOR_SIZE = 1024 # Size of vector embeddings
+COLLECTION_NAME = os.getenv('QDRANT_COLLECTION_NAME', 'content_collection')
+EMBEDDING_MODEL_NAME = "marengo3.0"
+VECTOR_SIZE = 512  # Marengo 3.0 text and video embeddings are 512-dimensional.
+MIN_TWELVELABS_VERSION = "1.2.1"
+
+
+def build_qdrant_url(host_or_url):
+    if host_or_url.startswith(("http://", "https://")):
+        return host_or_url
+
+    return f"https://{host_or_url}"
+
+
+def build_s3_client():
+    if not AWS_REGION:
+        return None
+
+    profile = os.getenv("AWS_PROFILE")
+    session_kwargs = {"region_name": AWS_REGION}
+
+    if profile:
+        session_kwargs["profile_name"] = profile
+    else:
+        access_key_id = os.getenv("AWS_ACCESS_KEY_ID") or os.getenv("AWS_ACCESS_KEY")
+        secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY") or os.getenv("AWS_SECRET_KEY")
+        session_token = os.getenv("AWS_SESSION_TOKEN")
+
+        if access_key_id and secret_access_key:
+            session_kwargs["aws_access_key_id"] = access_key_id
+            session_kwargs["aws_secret_access_key"] = secret_access_key
+            if session_token:
+                session_kwargs["aws_session_token"] = session_token
+
+    return boto3.Session(**session_kwargs).client("s3")
+
+
+def build_public_object_url(bucket_name, region, key):
+    encoded_key = quote(key, safe="/")
+    return f"https://{bucket_name}.s3.{region}.amazonaws.com/{encoded_key}"
+
+
+def get_public_video_url(s3_key, stored_video_url):
+    if S3_PUBLIC_BASE_URL:
+        encoded_key = quote(s3_key, safe="/")
+        return f"{S3_PUBLIC_BASE_URL.rstrip('/')}/{encoded_key}"
+
+    if AWS_S3_PUBLIC_READ and AWS_BUCKET_NAME and AWS_REGION:
+        return build_public_object_url(AWS_BUCKET_NAME, AWS_REGION, s3_key)
+
+    return stored_video_url
+
+
+def get_video_delivery_url(payload):
+    stored_video_url = payload.get('video_url')
+    s3_key = payload.get('s3_key')
+
+    if not s3_key:
+        return stored_video_url
+
+    public_video_url = get_public_video_url(s3_key, stored_video_url)
+    if public_video_url and (AWS_S3_PUBLIC_READ or S3_PUBLIC_BASE_URL):
+        return public_video_url
+
+    if s3_client and AWS_BUCKET_NAME:
+        try:
+            return s3_client.generate_presigned_url(
+                'get_object',
+                Params={'Bucket': AWS_BUCKET_NAME, 'Key': s3_key},
+                ExpiresIn=S3_PLAYBACK_URL_EXPIRATION_SECONDS
+            )
+        except Exception as exc:
+            logger.warning("Failed to generate presigned playback URL for %s: %s", s3_key, exc)
+
+    return public_video_url or stored_video_url
+
+
+def get_twelvelabs_version():
+    try:
+        return metadata.version("twelvelabs")
+    except metadata.PackageNotFoundError:
+        return "unknown"
+
+
+def ensure_twelvelabs_sdk_supports_marengo3(client):
+    if hasattr(client.embed, "v_2"):
+        return
+
+    installed_version = get_twelvelabs_version()
+    raise RuntimeError(
+        "This backend now uses Twelve Labs Marengo 3.0 through the Embed API v2, "
+        f"but your installed twelvelabs SDK is {installed_version}. "
+        f"Upgrade to twelvelabs>={MIN_TWELVELABS_VERSION} by running "
+        "'pip install -r requirements.txt' in backend-api."
+    )
+
 
 # Initialize clients for TwelveLabs API and Qdrant database
 try:
     client = TwelveLabs(api_key=API_KEY)
+    ensure_twelvelabs_sdk_supports_marengo3(client)
     qdrant_client = QdrantClient(
-        url=f"https://{QDRANT_HOST}",
+        url=build_qdrant_url(QDRANT_HOST),
         api_key=QDRANT_API_KEY,
         timeout=20
     )
+    s3_client = build_s3_client()
     logger.info("Successfully initialized API clients")
 except Exception as e:
     logger.error(f"Failed to initialize clients: {str(e)}")
@@ -73,19 +181,70 @@ def home():
 
 
 # Initialize Qdrant collection for storing video embeddings
+def recreate_qdrant_collection():
+    qdrant_client.recreate_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=VectorParams(
+            size=VECTOR_SIZE,
+            distance=Distance.COSINE  # Distance metric as cosine for similarity search
+        )
+    )
+
+
+def get_collection_vector_size(collection_info):
+    vectors_config = collection_info.config.params.vectors
+
+    if hasattr(vectors_config, "size"):
+        return vectors_config.size
+
+    if isinstance(vectors_config, dict) and vectors_config:
+        first_vector = next(iter(vectors_config.values()))
+        return getattr(first_vector, "size", None)
+
+    return None
+
+
 def init_qdrant():
     try:
         collections = qdrant_client.get_collections().collections
         collection_exists = any(col.name == COLLECTION_NAME for col in collections)
         if not collection_exists:
-            qdrant_client.recreate_collection(
-                collection_name=COLLECTION_NAME,
-                vectors_config=VectorParams(
-                    size=VECTOR_SIZE,
-                    distance=Distance.COSINE # Distance metric as cosine for similarity search
-                )
-            )
+            recreate_qdrant_collection()
             logger.info(f"Created collection: {COLLECTION_NAME}")
+            return
+
+        collection_info = qdrant_client.get_collection(COLLECTION_NAME)
+        current_vector_size = get_collection_vector_size(collection_info)
+
+        if current_vector_size == VECTOR_SIZE:
+            logger.info(
+                "Collection '%s' already matches %s embeddings (%s dimensions)",
+                COLLECTION_NAME,
+                EMBEDDING_MODEL_NAME,
+                VECTOR_SIZE
+            )
+            return
+
+        mismatch_message = (
+            f"Collection '{COLLECTION_NAME}' uses vector size {current_vector_size}, "
+            f"but {EMBEDDING_MODEL_NAME} returns {VECTOR_SIZE}-dimensional embeddings. "
+            "Marengo 2.7 and Marengo 3.0 embeddings are not compatible, so you must "
+            "recreate the collection and re-embed your videos."
+        )
+
+        if RECREATE_COLLECTION_ON_VECTOR_MISMATCH:
+            logger.warning(
+                "%s Recreating the collection because RECREATE_COLLECTION_ON_VECTOR_MISMATCH=true.",
+                mismatch_message
+            )
+            recreate_qdrant_collection()
+            logger.info(f"Recreated collection: {COLLECTION_NAME}")
+            return
+
+        raise RuntimeError(
+            f"{mismatch_message} Set RECREATE_COLLECTION_ON_VECTOR_MISMATCH=true "
+            "to recreate the collection automatically on startup."
+        )
     except Exception as e:
         logger.error(f"Qdrant initialization error: {str(e)}")
         raise
@@ -129,14 +288,18 @@ def search():
     
     try:
         # Generate embedding for the search query
-        logger.info(f"Generating embedding using model: Marengo-retrieval-2.7")
-        embedding_response = client.embed.create(
-            model_name="Marengo-retrieval-2.7",
-            text=formatted_query
+        logger.info(f"Generating embedding using model: {EMBEDDING_MODEL_NAME}")
+        embedding_response = client.embed.v_2.create(
+            input_type="text",
+            model_name=EMBEDDING_MODEL_NAME,
+            text={"input_text": formatted_query}
         )
-        
+
+        if not embedding_response.data:
+            raise ValueError("No query embeddings were returned by Twelve Labs")
+
         # Get the embedding vector
-        vector = embedding_response.text_embedding.segments[0].embeddings_float
+        vector = embedding_response.data[0].embedding
         logger.info(f"Successfully generated embedding with {len(vector)} dimensions")
         
         # Execute vector search
@@ -175,7 +338,7 @@ def search():
             # Extract result fields
             video_id = payload.get('video_id', f"video_{point_id}")
             filename = payload.get('original_filename', payload.get('filename', 'video.mp4'))
-            video_url = payload.get('video_url')
+            video_url = get_video_delivery_url(payload)
             start_time = float(payload.get('start_time', 0))
             end_time = float(payload.get('end_time', 30))
             

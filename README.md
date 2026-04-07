@@ -7,7 +7,9 @@
 
 ## Overview
 
-Content Recommendation is an open source platform that makes use of vector similarity search to provide highly relevant content recommendations. The system uses Twelve Labs, for embedding creation and Qdrant, a vector similarity search engine, to store and retrieve content based on semantic similarity rather than just keywords. This enables more intuitive and personalized content discovery for users.
+Content Recommendation is an open source platform that makes use of vector similarity search to provide highly relevant content recommendations. The system uses Twelve Labs Marengo 3.0 for embedding creation and Qdrant, a vector similarity search engine, to store and retrieve content based on semantic similarity rather than just keywords. This enables more intuitive and personalized content discovery for users.
+
+
 
 ## Prerequisites
 
@@ -99,8 +101,8 @@ The frontend is developed using Next.js, while the backend is powered by Flask A
 
 3. Configure your connection in the `.env` file:
 
-```
-QDRANT_URL=your_qdrant_url
+```dotenv
+QDRANT_HOST=your_qdrant_host_or_url
 QDRANT_API_KEY=your_qdrant_api_key
 API_KEY=your_twelvelabs_api_key
 ```
@@ -137,8 +139,8 @@ pip install -r requirements.txt
 
 4. **Configure environment variables -**
 
-```
-QDRANT_URL=your_qdrant_url
+```dotenv
+QDRANT_HOST=your_qdrant_host_or_url
 QDRANT_API_KEY=your_qdrant_api_key
 API_KEY=your_twelvelabs_api_key
 ```
@@ -198,4 +200,3 @@ curl -X POST http://localhost:5000/search \
 ## Queries
 
 For any doubts or help you can reach out to me via hrishikesh3321@gmail.com or ask in the [Discord Channel](https://discord.com/invite/Sh6BRfakJa)
-

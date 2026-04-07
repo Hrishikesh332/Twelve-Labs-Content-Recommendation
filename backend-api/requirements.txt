@@ -1,7 +1,8 @@
 flask
 python-dotenv
-twelvelabs==0.4.11
+twelvelabs==1.2.1
 qdrant-client
+boto3
 Werkzeug
 requests
 pillow

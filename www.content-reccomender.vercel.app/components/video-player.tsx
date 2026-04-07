@@ -10,6 +10,9 @@ interface VideoPlayerProps {
   startTime?: number
   fallbackUrl?: string
   autoPlay?: boolean
+  fitMode?: "cover" | "contain" | "smart"
+  showNativeControls?: boolean
+  onAspectRatioChange?: (aspectRatio: number) => void
 }
 
 // Fallback video URLs for when the backend is unavailable
@@ -49,14 +52,67 @@ const fallbackVideos: Record<string, string> = {
     "https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos-embed/08ff403a-63e7-4188-9eed-3858f4457173_078_🧑‍🍳 Experimenting With Flavors! ｜ Ratatouille ｜ Disney Kids_pwpRSNCdr6w.mp4",
 }
 
-export default function VideoPlayer({ videoId, startTime = 0, fallbackUrl, autoPlay = false }: VideoPlayerProps) {
+export default function VideoPlayer({
+  videoId,
+  startTime = 0,
+  fallbackUrl,
+  autoPlay = false,
+  fitMode = "cover",
+  showNativeControls = false,
+  onAspectRatioChange,
+}: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [videoSrc, setVideoSrc] = useState<string>("")
   const [loadAttempt, setLoadAttempt] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
-  const [isMuted, setIsMuted] = useState(false) //  audio on by default
+  const [isMuted, setIsMuted] = useState(true)
   const [showControls, setShowControls] = useState(true)
+  const [videoAspectRatio, setVideoAspectRatio] = useState<number | null>(null)
+
+  const resolvedFitMode =
+    fitMode === "smart" ? (videoAspectRatio && videoAspectRatio > 1.05 ? "contain" : "cover") : fitMode
+
+  const isIgnorablePlayError = (error: unknown) => {
+    if (!(error instanceof Error)) {
+      return false
+    }
+
+    return (
+      error.name === "AbortError" ||
+      error.message.includes("removed from the document") ||
+      error.message.includes("The play() request was interrupted")
+    )
+  }
+
+  const attemptPlay = (videoElement: HTMLVideoElement | null, context: string) => {
+    if (!videoElement) {
+      return
+    }
+
+    const playPromise = videoElement.play()
+
+    if (playPromise !== undefined) {
+      playPromise.catch((error) => {
+        if (videoRef.current !== videoElement || isIgnorablePlayError(error)) {
+          return
+        }
+
+        console.error(`Error ${context}:`, error)
+
+        if (context === "auto-playing video" && !videoElement.muted) {
+          console.log("Trying muted autoplay as fallback")
+          videoElement.muted = true
+          setIsMuted(true)
+          videoElement.play().catch((retryError) => {
+            if (!isIgnorablePlayError(retryError)) {
+              console.error("Even muted autoplay failed:", retryError)
+            }
+          })
+        }
+      })
+    }
+  }
 
   // Debug the component rendering
   console.log("VideoPlayer rendering:", { videoId, fallbackUrl, autoPlay })
@@ -77,21 +133,14 @@ export default function VideoPlayer({ videoId, startTime = 0, fallbackUrl, autoP
     setLoadAttempt(0)
     setIsLoading(true)
     setShowControls(true)
+    setIsMuted(true)
+    setVideoAspectRatio(null)
 
     console.log("VideoPlayer: Setting up video for ID:", videoId, "with fallback:", fallbackUrl)
 
-    // Process the fallback URL if provided
-    let processedUrl = fallbackUrl
-    if (processedUrl) {
-      try {
-        processedUrl = decodeURIComponent(processedUrl)
-        const urlObj = new URL(processedUrl)
-        processedUrl = urlObj.toString()
-        console.log("Processed URL:", processedUrl)
-      } catch (e) {
-        console.error("Error processing fallback URL:", e)
-      }
-    }
+    // Use the backend-provided URL exactly as returned.
+    // Re-decoding or re-serializing signed S3 URLs can invalidate the signature.
+    const processedUrl = fallbackUrl?.trim()
 
     if (processedUrl) {
       // If a direct fallback URL is provided, use it
@@ -120,6 +169,7 @@ export default function VideoPlayer({ videoId, startTime = 0, fallbackUrl, autoP
 
     if (videoRef.current) {
       videoRef.current.currentTime = startTime
+      videoRef.current.muted = true
     }
 
     // Set loading to false after a short delay
@@ -136,31 +186,7 @@ export default function VideoPlayer({ videoId, startTime = 0, fallbackUrl, autoP
       console.log("Attempting to autoplay video:", videoSrc)
 
       const playTimer = setTimeout(() => {
-        if (videoRef.current) {
-          const playPromise = videoRef.current.play()
-
-          if (playPromise !== undefined) {
-            playPromise
-              .then(() => {
-                console.log("Autoplay successful")
-                setIsPlaying(true)
-              })
-              .catch((err) => {
-                console.error("Error auto-playing video:", err)
-                // If autoplay fails, mark that we need user interaction
-
-                // Try again with muted (browsers allow muted autoplay)
-                if (!isMuted) {
-                  console.log("Trying muted autoplay as fallback")
-                  if(videoRef?.current) {
-                    videoRef.current.muted = true
-                  }
-                  setIsMuted(true)
-                  videoRef?.current?.play().catch((e) => console.error("Even muted autoplay failed:", e))
-                }
-              })
-          }
-        }
+        attemptPlay(videoRef.current, "auto-playing video")
       }, 300)
 
       return () => clearTimeout(playTimer)
@@ -169,7 +195,7 @@ export default function VideoPlayer({ videoId, startTime = 0, fallbackUrl, autoP
       videoRef.current.pause()
       setIsPlaying(false)
     }
-  }, [videoSrc, isLoading, isMuted, autoPlay])
+  }, [videoSrc, isLoading, autoPlay])
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -182,9 +208,7 @@ export default function VideoPlayer({ videoId, startTime = 0, fallbackUrl, autoP
     const handleUserInteraction = () => {
       // Try to play the video if it's not already playing
       if (videoRef.current && !isPlaying && !isLoading) {
-        videoRef.current.play().catch((err) => {
-          console.error("Error playing video after interaction:", err)
-        })
+        attemptPlay(videoRef.current, "playing video after interaction")
       }
     }
 
@@ -208,10 +232,7 @@ export default function VideoPlayer({ videoId, startTime = 0, fallbackUrl, autoP
         videoRef.current.pause()
         setIsPlaying(false)
       } else {
-        videoRef.current.play().catch((err) => {
-          console.error("Error playing video:", err)
-        })
-        setIsPlaying(true)
+        attemptPlay(videoRef.current, "playing video")
       }
     }
   }
@@ -257,7 +278,11 @@ export default function VideoPlayer({ videoId, startTime = 0, fallbackUrl, autoP
 
   return (
     <div
-      className="relative h-full w-full bg-black rounded-lg overflow-hidden"
+      className={`relative h-full w-full overflow-hidden rounded-lg ${
+        resolvedFitMode === "contain"
+          ? "bg-[radial-gradient(circle_at_top,_rgba(0,226,27,0.26),_rgba(3,7,18,0.96)_58%)]"
+          : "bg-black"
+      }`}
       onMouseMove={() => setShowControls(true)}
       onTouchStart={() => setShowControls(true)}
     >
@@ -271,11 +296,20 @@ export default function VideoPlayer({ videoId, startTime = 0, fallbackUrl, autoP
             <video
               ref={videoRef}
               src={videoSrc}
-              className="h-full w-full object-cover"
+              className={resolvedFitMode === "contain" ? "h-full w-full object-contain" : "h-full w-full object-cover"}
               playsInline
               loop
               muted={isMuted}
+              controls={showNativeControls}
               onClick={togglePlay}
+              onLoadedMetadata={(event) => {
+                const element = event.currentTarget
+                if (element.videoWidth > 0 && element.videoHeight > 0) {
+                  const aspectRatio = element.videoWidth / element.videoHeight
+                  setVideoAspectRatio(aspectRatio)
+                  onAspectRatioChange?.(aspectRatio)
+                }
+              }}
               onPlay={() => setIsPlaying(true)}
               onPause={() => setIsPlaying(false)}
               onError={handleVideoError}
@@ -328,45 +362,46 @@ export default function VideoPlayer({ videoId, startTime = 0, fallbackUrl, autoP
             </button>
           </div>
 
-          <div
-            className={`absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent transition-opacity duration-300 z-20 ${
-              showControls ? "opacity-100" : "opacity-0"
-            }`}
-          >
-            <div className="flex justify-between items-center">
-              {/* Play/Pause button */}
-              <button onClick={togglePlay} className="bg-white/90 text-black rounded-full p-2 shadow-lg">
-                {isPlaying ? (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <rect x="6" y="4" width="4" height="16"></rect>
-                    <rect x="14" y="4" width="4" height="16"></rect>
-                  </svg>
-                ) : (
-                  <Play className="h-6 w-6 ml-0.5" />
-                )}
-              </button>
+          {!showNativeControls ? (
+            <div
+              className={`absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent transition-opacity duration-300 z-20 ${
+                showControls ? "opacity-100" : "opacity-0"
+              }`}
+            >
+              <div className="flex justify-between items-center">
+                {/* Play/Pause button */}
+                <button onClick={togglePlay} className="bg-white/90 text-black rounded-full p-2 shadow-lg">
+                  {isPlaying ? (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <rect x="6" y="4" width="4" height="16"></rect>
+                      <rect x="14" y="4" width="4" height="16"></rect>
+                    </svg>
+                  ) : (
+                    <Play className="h-6 w-6 ml-0.5" />
+                  )}
+                </button>
 
-              <button
-                onClick={toggleMute}
-                className="bg-white/90 text-black rounded-full p-2 shadow-lg flex items-center gap-2"
-              >
-                {isMuted ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
-              </button>
+                <button
+                  onClick={toggleMute}
+                  className="bg-white/90 text-black rounded-full p-2 shadow-lg flex items-center gap-2"
+                >
+                  {isMuted ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
+                </button>
+              </div>
             </div>
-          </div>
+          ) : null}
         </>
       )}
     </div>
   )
 }
-

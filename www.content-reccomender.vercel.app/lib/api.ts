@@ -1,5 +1,7 @@
 // Base URL for the Flask backend
-const API_BASE_URL = "http://localhost:5000"
+export const API_BASE_URL = (
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000"
+).replace(/\/$/, "")
 
 // Function to search for videos
 export async function searchVideos(query: string) {
@@ -49,4 +51,3 @@ export async function uploadVideo(file: File) {
 export function getVideoUrl(videoId: string) {
   return `${API_BASE_URL}/video/${videoId}`
 }
-

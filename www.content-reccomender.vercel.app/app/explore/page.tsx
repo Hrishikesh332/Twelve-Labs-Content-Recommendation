@@ -2,13 +2,36 @@
 
 import type React from "react"
 import { useState, useEffect, useRef, useCallback } from "react"
-import { Drawer } from "@/components/ui/drawer"
+import { Drawer, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from "@/components/ui/drawer"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Settings, Search, ArrowUp, ArrowDown } from "lucide-react"
+import {
+  Settings,
+  Search,
+  ArrowUp,
+  ArrowDown,
+  Rocket,
+  Clapperboard,
+  Baby,
+  Users,
+  Compass,
+  Sparkles,
+  Drama,
+  Zap,
+  Smile,
+  Frown,
+  Ghost,
+  Heart,
+  CarFront,
+  Swords,
+  Shield,
+} from "lucide-react"
+import type { LucideIcon } from "lucide-react"
+import SearchResultsGallery from "@/components/search-results-gallery"
 import VideoPlayer from "@/components/video-player"
-import StyleSelector from "@/components/style-selector"
 import Navbar from "@/components/navbar"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { API_BASE_URL } from "@/lib/api"
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 import Image from "next/image"
 
@@ -22,7 +45,10 @@ interface VideoItem {
   confidence: string
   url?: string
   uniqueId?: string
+  aspectRatio?: number
 }
+
+type ViewMode = "vertical" | "gallery"
 
 const fallbackVideos = [
   {
@@ -156,6 +182,23 @@ const categoryFallbacks = {
     "https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos-embed/1fe5cf95-805b-4f7a-aee1-c7f209ffd5a5_011_＂Get Your Pet to the Vet＂ Song #2 ｜ Doc McStuffins ｜  Disney Junior UK_2bb0prFpCU8.mp4",
   winter:
     "https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos-embed/1203fb1a-ef99-4cc0-a212-8bf1589216ea_044_🗻 Frozen Quest： Can Anna Stop Winter？ ｜ Frozen ｜ Disney Kids_UrrHl9p2XDM.mp4",
+  thriller:
+    "https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos-embed/5d4ed77c-8385-4391-a717-689a6ef603b3_066_Syndrome's Big Plan Unleashed! 💣 ｜ The Incredibles ｜ Disney Kids_m_6w7hirrzE.mp4",
+  action:
+    "https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos-embed/26b8a1b0-278d-459b-8504-44d01fcd4672_002_⚔️ Mulan ｜ Movies in 60 Seconds ｜ Disney Kids_R-96-CEZ100.mp4",
+  happy:
+    "https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos-embed/08ff403a-63e7-4188-9eed-3858f4457173_078_🧑‍🍳 Experimenting With Flavors! ｜ Ratatouille ｜ Disney Kids_pwpRSNCdr6w.mp4",
+  sad: "https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos-embed/1203fb1a-ef99-4cc0-a212-8bf1589216ea_044_🗻 Frozen Quest： Can Anna Stop Winter？ ｜ Frozen ｜ Disney Kids_UrrHl9p2XDM.mp4",
+  scary:
+    "https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos-embed/5d4ed77c-8385-4391-a717-689a6ef603b3_066_Syndrome's Big Plan Unleashed! 💣 ｜ The Incredibles ｜ Disney Kids_m_6w7hirrzE.mp4",
+  uplifting:
+    "https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos-embed/365d8546-568f-4682-b336-17be6f4cdd2e_097_🎁 Bob Cratchit's Best Christmas Gift Yet!  ｜ Mickey's Christmas Carol ｜ Disney Kids_PTpP-TSCkRg.mp4",
+  "car-chases":
+    "https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos-embed/06c17740-1b34-4af3-b1fc-c8ab586915f7_054_🚤 Dory's Next Stop! ｜ Finding Dory ｜ Disney Kids_HaL1PU3hpvY.mp4",
+  fighting:
+    "https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos-embed/26b8a1b0-278d-459b-8504-44d01fcd4672_002_⚔️ Mulan ｜ Movies in 60 Seconds ｜ Disney Kids_R-96-CEZ100.mp4",
+  "child-friendly":
+    "https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos-embed/919c946b-5dd2-49b5-b100-d4e5d136d85d_006_🧼 Wash Your Hands Song! ｜ Doc McStuffins ｜ Disney Kids_pboMdDuCJFQ.mp4",
 }
 
 // Map of category values to their full descriptions
@@ -172,6 +215,111 @@ const categoryDescriptions: Record<string, string> = {
   comedy: "Comedy - Humorous & Lighthearted",
   fantasy: "Fantasy - Magical Worlds & Creatures",
   "sci-fi": "Sci-Fi - Futuristic & Technology-Based",
+  thriller: "Thriller - Suspenseful and Tense",
+  action: "Action - Fast-Paced and Energetic",
+  happy: "Happy - Joyful and Positive",
+  sad: "Sad - Emotional and Reflective",
+  scary: "Scary - Frightening and Intense",
+  uplifting: "Uplifting - Inspiring and Hopeful",
+  "car-chases": "Car Chases - Vehicles and Pursuits",
+  fighting: "Fighting - Combat and Battles",
+  "child-friendly": "Child Friendly - Safe and Playful",
+}
+
+const ALL_TAGS_VALUE = "__all__"
+
+const CATEGORY_OPTIONS = [
+  { value: "sci-fi", label: "Sci-Fi - Futuristic & Technology-Based", shortLabel: "Sci-Fi", icon: Rocket },
+  { value: "cartoon", label: "Cartoon - Stylized Short-Form Animation", shortLabel: "Cartoon", icon: Clapperboard },
+  { value: "kids", label: "Kids - Educational & Child-Friendly", shortLabel: "Kids", icon: Baby },
+  { value: "family", label: "Family - All-Ages Entertainment", shortLabel: "Family", icon: Users },
+  { value: "adventure", label: "Adventure - Exciting Journeys & Quests", shortLabel: "Adventure", icon: Compass },
+  { value: "fantasy", label: "Fantasy - Magical Worlds & Creatures", shortLabel: "Fantasy", icon: Sparkles },
+  { value: "thriller", label: "Thriller - Suspenseful and Tense", shortLabel: "Thriller", icon: Drama },
+  { value: "action", label: "Action - Fast-Paced and Energetic", shortLabel: "Action", icon: Zap },
+  { value: "happy", label: "Happy - Joyful and Positive", shortLabel: "Happy", icon: Smile },
+  { value: "sad", label: "Sad - Emotional and Reflective", shortLabel: "Sad", icon: Frown },
+  { value: "scary", label: "Scary - Frightening and Intense", shortLabel: "Scary", icon: Ghost },
+  { value: "uplifting", label: "Uplifting - Inspiring and Hopeful", shortLabel: "Uplifting", icon: Heart },
+  { value: "car-chases", label: "Car Chases - Vehicles and Pursuits", shortLabel: "Car", icon: CarFront },
+  { value: "fighting", label: "Fighting - Combat and Battles", shortLabel: "Fighting", icon: Swords },
+  { value: "child-friendly", label: "Child Friendly - Safe and Playful", shortLabel: "Child", icon: Shield },
+] as const satisfies ReadonlyArray<{
+  value: string
+  label: string
+  shortLabel: string
+  icon: LucideIcon
+}>
+
+const getCategoryOption = (value: string) =>
+  CATEGORY_OPTIONS.find((option) => option.value === value) ?? null
+
+const EXPLORE_QUICK_PROMPTS = [
+  {
+    title: "Edge-of-seat",
+    description: "Tense turns, suspense, and thriller energy.",
+    tag: "thriller",
+    query: "suspenseful thriller scenes with tension",
+  },
+  {
+    title: "Action burst",
+    description: "Fighting, speed, and sharp momentum.",
+    tag: "action",
+    query: "action scenes with fighting and fast pacing",
+  },
+  {
+    title: "Family lift",
+    description: "Child-friendly stories with warm, uplifting beats.",
+    tag: "child-friendly",
+    query: "uplifting child friendly adventures",
+  },
+  {
+    title: "Fast pursuit",
+    description: "Car chases, escapes, and chase-heavy movement.",
+    tag: "car-chases",
+    query: "fast car chases and dramatic pursuits",
+  },
+] as const
+
+const EXPLORE_MOOD_CHIPS = ["Happy", "Scary", "Uplifting", "Child Friendly", "Fighting"] as const
+
+function VerticalViewIcon({ active }: { active: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={cn("h-4 w-4 transition-colors", active ? "text-black" : "text-slate-500")}
+      aria-hidden="true"
+    >
+      <rect x="7" y="3.5" width="10" height="17" rx="2.5" />
+      <path d="M10 7.5h4" />
+      <path d="M10 16.5h4" />
+    </svg>
+  )
+}
+
+function GalleryViewIcon({ active }: { active: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={cn("h-4 w-4 transition-colors", active ? "text-black" : "text-slate-500")}
+      aria-hidden="true"
+    >
+      <rect x="3.5" y="4" width="7" height="7" rx="1.5" />
+      <rect x="13.5" y="4" width="7" height="7" rx="1.5" />
+      <rect x="3.5" y="13" width="7" height="7" rx="1.5" />
+      <rect x="13.5" y="13" width="7" height="7" rx="1.5" />
+    </svg>
+  )
 }
 
 export default function ExplorePage() {
@@ -195,8 +343,9 @@ export default function ExplorePage() {
   // State for theme and mood
   const [theme, setTheme] = useState("")
   const [mood, setMood] = useState("")
-
-  const [isVideoPlaying, setIsVideoPlaying] = useState(true)
+  const [viewMode, setViewMode] = useState<ViewMode>("vertical")
+  const [activeGalleryVideo, setActiveGalleryVideo] = useState<VideoItem | null>(null)
+  const [currentVideoAspectRatio, setCurrentVideoAspectRatio] = useState<number | null>(null)
 
   // Show swipe instruction when a new video loads or when changing videos
 
@@ -251,12 +400,13 @@ export default function ExplorePage() {
 
       // Log the API call we're about to make
       const requestBody = { query: freshQuery }
-      console.log("URL ", `${process.env.NEXT_PUBLIC_URL}/search` || "")
+      const searchEndpoint = `${API_BASE_URL}/search`
+      console.log("URL ", searchEndpoint)
 
-      logApiCall("POST", `${process.env.NEXT_PUBLIC_URL}/search` || "", requestBody)
+      logApiCall("POST", searchEndpoint, requestBody)
 
       // Try to fetch from backend
-      const response = await fetch(`${process.env.NEXT_PUBLIC_URL}/search` || "", {
+      const response = await fetch(searchEndpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -453,10 +603,6 @@ export default function ExplorePage() {
     }
   }
 
-  const toggleVideoPlayback = () => {
-    setIsVideoPlaying(!isVideoPlaying)
-  }
-
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (touchStartY.current === null) return
 
@@ -466,12 +612,8 @@ export default function ExplorePage() {
     if (Math.abs(deltaY) > 30) {
       if (deltaY < 0) {
         handleNext()
-        // Reset video playing state when changing videos
-        setIsVideoPlaying(true)
       } else {
         handlePrevious()
-        // Reset video playing state when changing videos
-        setIsVideoPlaying(true)
       }
     }
 
@@ -483,10 +625,8 @@ export default function ExplorePage() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowUp") {
         handlePrevious()
-        setIsVideoPlaying(true)
       } else if (e.key === "ArrowDown") {
         handleNext()
-        setIsVideoPlaying(true)
       }
     }
 
@@ -496,6 +636,51 @@ export default function ExplorePage() {
 
   // Get current video with fallback
   const currentVideo = videos.length > 0 ? videos[currentIndex] : null
+  const hasResults = hasSearched && videos.length > 0
+  const selectedCategoryValue = category || ALL_TAGS_VALUE
+  const selectedCategoryOption = getCategoryOption(category)
+  const isGalleryView = hasResults && viewMode === "gallery"
+  const isCurrentVideoLandscape = (currentVideoAspectRatio ?? 0) > 1.05
+  const activeGalleryAspectRatio =
+    activeGalleryVideo?.aspectRatio && Number.isFinite(activeGalleryVideo.aspectRatio) && activeGalleryVideo.aspectRatio > 0
+      ? activeGalleryVideo.aspectRatio
+      : 16 / 9
+  const activeGalleryWidth =
+    activeGalleryAspectRatio < 1 ? `min(92vw, calc(82vh * ${activeGalleryAspectRatio}))` : "min(92vw, 1100px)"
+  const verticalPlayerStyle = isCurrentVideoLandscape
+    ? {
+        width: "min(94vw, 880px)",
+        maxHeight: "calc(100vh - 180px)",
+        aspectRatio: currentVideoAspectRatio ?? 16 / 9,
+      }
+    : {
+        width: "100%",
+        maxWidth: "400px",
+        height: "80vh",
+        maxHeight: "calc(100vh - 160px)",
+        aspectRatio: "9 / 16",
+      }
+
+  useEffect(() => {
+    setCurrentVideoAspectRatio(null)
+  }, [currentIndex, currentVideo?.uniqueId, currentVideo?.video_id])
+
+  const applyExplorePrompt = (query: string, nextCategory?: string) => {
+    setSearchQuery(query)
+    if (nextCategory !== undefined) {
+      setCategory(nextCategory)
+    }
+  }
+
+  const applyPreferenceChanges = () => {
+    handleSearch()
+    setIsDrawerOpen(false)
+  }
+
+  const handlePreferenceReset = () => {
+    setIsDrawerOpen(false)
+    resetSearch()
+  }
 
   // Reset recommendation form
   const resetSearch = () => {
@@ -509,6 +694,8 @@ export default function ExplorePage() {
     setCurrentQuery("")
     setSearchQuery("")
     setCategory("")
+    setViewMode("vertical")
+    setActiveGalleryVideo(null)
   }
 
   // Update the handleStyleChange function to handle the showSearchForm flag
@@ -547,7 +734,7 @@ export default function ExplorePage() {
   }
 
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center relative bg-[#F4F3F3] overflow-hidden">
+    <div className="relative h-[100dvh] w-full overflow-hidden bg-[#F4F3F3]">
       {/* Background image */}
       <div className="absolute inset-0 z-0">
         <Image src="/background.png" alt="Background" fill priority className="object-cover opacity-50" />
@@ -557,53 +744,206 @@ export default function ExplorePage() {
       {/* Navbar - using the updated component */}
       <Navbar />
 
+      {hasResults ? (
+        <div className="fixed right-4 top-20 z-50 md:right-6">
+          <div className="flex items-center gap-1 rounded-full border border-white/70 bg-white/85 p-1 shadow-[0_14px_40px_rgba(15,23,42,0.16)] backdrop-blur-xl">
+            <button
+              type="button"
+              className={cn(
+                "inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold transition-colors md:px-4",
+                viewMode === "vertical" ? "bg-[#00E21B] text-black" : "text-slate-600 hover:bg-slate-100/80",
+              )}
+              onClick={() => setViewMode("vertical")}
+              aria-pressed={viewMode === "vertical"}
+            >
+              <VerticalViewIcon active={viewMode === "vertical"} />
+              <span>Vertical</span>
+            </button>
+            <button
+              type="button"
+              className={cn(
+                "inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold transition-colors md:px-4",
+                viewMode === "gallery" ? "bg-[#00E21B] text-black" : "text-slate-600 hover:bg-slate-100/80",
+              )}
+              onClick={() => setViewMode("gallery")}
+              aria-pressed={viewMode === "gallery"}
+            >
+              <GalleryViewIcon active={viewMode === "gallery"} />
+              <span>Gallery</span>
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       {/* Main content - centered with flex */}
-      <div className="relative z-10 w-full flex flex-col items-center justify-center px-4 pt-16 pb-20 min-h-[calc(100vh-80px)]">
+      <div
+        className={cn(
+          "relative z-10 w-full px-4",
+          isGalleryView
+            ? "flex h-[100dvh] flex-col items-center justify-start overflow-hidden pb-28 pt-24 md:px-6 md:pb-32 md:pt-28"
+            : "flex min-h-[100dvh] flex-col items-center justify-center px-4 pb-12 pt-28 md:px-6 md:pb-16 md:pt-32",
+        )}
+      >
         {showRecommendationForm ? (
-          <div className="bg-white rounded-2xl p-6 shadow-xl max-w-md w-full">
-            <h2 className="text-2xl font-bold text-center mb-6">What would you like to watch?</h2>
+          <div className="mx-auto flex w-full max-w-6xl flex-1 items-center justify-center">
+            <div className="grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_420px] lg:items-stretch">
+              <section className="relative overflow-hidden rounded-[34px] border border-white/70 bg-[linear-gradient(135deg,rgba(255,255,255,0.76),rgba(240,250,242,0.94))] p-6 shadow-[0_30px_90px_rgba(15,23,42,0.12)] backdrop-blur-xl md:p-8 lg:p-10">
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(0,226,27,0.22),_transparent_34%),radial-gradient(circle_at_bottom_right,_rgba(15,23,42,0.10),_transparent_30%)]" />
+                <div className="relative">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/75 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-600 shadow-sm">
+                    <Sparkles className="h-3.5 w-3.5 text-[#00E21B]" />
+                    Explore
+                  </div>
 
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Category</label>
-                <Select value={category} onValueChange={setCategory}>
-                  <SelectTrigger className="border-gray-300 focus:ring-[#00E21B] focus:border-[#00E21B]">
-                    <SelectValue placeholder="Choose a category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="sci-fi">Sci-Fi - Futuristic & Technology-Based</SelectItem>
-                    <SelectItem value="cartoon">Cartoon - Stylized Short-Form Animation</SelectItem>
-                    <SelectItem value="kids">Kids - Educational & Child-Friendly</SelectItem>
-                    <SelectItem value="family">Family - All-Ages Entertainment</SelectItem>
-                    <SelectItem value="adventure">Adventure - Exciting Journeys & Quests</SelectItem>
-                    <SelectItem value="fantasy">Fantasy - Magical Worlds & Creatures</SelectItem>
+                  <h1 className="mt-5 max-w-2xl text-4xl font-semibold tracking-tight text-slate-950 md:text-5xl">
+                    What would you like to watch?
+                  </h1>
+                  <p className="mt-4 max-w-xl text-sm leading-6 text-slate-600 md:text-base">
+                    Start with a feeling, a genre, or a kind of moment. We’ll turn it into a video feed that feels
+                    more curated than searched.
+                  </p>
 
-                  </SelectContent>
-                </Select>
-              </div>
+                  <div className="mt-8 grid gap-3 sm:grid-cols-2">
+                    {EXPLORE_QUICK_PROMPTS.map((prompt) => {
+                      const promptOption = getCategoryOption(prompt.tag)
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Search (optional)</label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Enter keywords..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#00E21B] focus:border-[#00E21B]"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        handleSearch()
-                      }
-                    }}
-                  />
+                      return (
+                        <button
+                          key={prompt.title}
+                          type="button"
+                          onClick={() => applyExplorePrompt(prompt.query, prompt.tag)}
+                          className="group rounded-[24px] border border-white/70 bg-white/72 p-4 text-left shadow-[0_16px_45px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5 hover:bg-white hover:shadow-[0_22px_55px_rgba(15,23,42,0.12)]"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-base font-semibold text-slate-900">{prompt.title}</p>
+                              <p className="mt-1 text-sm leading-5 text-slate-600">{prompt.description}</p>
+                            </div>
+                            <span className="mt-0.5 text-slate-700">
+                              {promptOption ? <promptOption.icon className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
+                            </span>
+                          </div>
+                          <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-slate-900/[0.04] px-3 py-1.5 text-xs font-medium text-slate-600">
+                            <span>{promptOption ? promptOption.shortLabel : "All Tags"}</span>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  <div className="mt-6 flex flex-wrap gap-2">
+                    {EXPLORE_MOOD_CHIPS.map((chip) => (
+                      <button
+                        key={chip}
+                        type="button"
+                        onClick={() => setSearchQuery(chip.toLowerCase())}
+                        className="rounded-full border border-white/80 bg-white/70 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-white hover:text-slate-900"
+                      >
+                        {chip}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              </section>
 
-              <Button onClick={handleSearch} className="w-full bg-[#00E21B] text-black hover:bg-[#00E21B]/90">
-                <Search className="mr-2 h-4 w-4" />
-                Find Videos
-              </Button>
+              <section className="rounded-[32px] border border-white/70 bg-white/84 p-5 shadow-[0_30px_80px_rgba(15,23,42,0.10)] backdrop-blur-xl md:p-6">
+                <div className="flex h-full flex-col">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Build Your Feed</p>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">
+                      Pick a tag, add a scene or mood, and jump straight into results.
+                    </p>
+                  </div>
+
+                  <div className="mt-6 space-y-4">
+                    <Select
+                      value={selectedCategoryValue}
+                      onValueChange={(value) => setCategory(value === ALL_TAGS_VALUE ? "" : value)}
+                    >
+                      <SelectTrigger className="h-14 rounded-full border-0 bg-slate-900/[0.04] px-4 text-sm text-slate-700 shadow-none ring-1 ring-slate-900/6">
+                        <div className="flex items-center gap-1.5">
+                          <span className="flex h-4 w-4 items-center justify-center text-slate-700">
+                            {selectedCategoryOption ? (
+                              <selectedCategoryOption.icon className="h-4 w-4" />
+                            ) : (
+                              <Sparkles className="h-4 w-4" />
+                            )}
+                          </span>
+                          <span className="font-medium">
+                            {selectedCategoryOption ? selectedCategoryOption.shortLabel : "All Tags"}
+                          </span>
+                        </div>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={ALL_TAGS_VALUE}>
+                          <div className="flex items-center gap-2">
+                            <Sparkles className="h-4 w-4" />
+                            <span>All Tags</span>
+                          </div>
+                        </SelectItem>
+                        {CATEGORY_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            <div className="flex items-center gap-2">
+                              <option.icon className="h-4 w-4" />
+                              <span>{option.shortLabel}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <div className="flex h-14 items-center gap-3 rounded-full bg-slate-900/[0.04] pl-5 pr-3 ring-1 ring-slate-900/6">
+                      <input
+                        type="text"
+                        placeholder="Describe the scene, mood, or story beat..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="h-full w-full bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-500"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            handleSearch()
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleSearch}
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#00E21B] text-black shadow-[0_14px_30px_rgba(0,226,27,0.24)] transition hover:bg-[#00E21B]/90"
+                        aria-label="Find videos"
+                      >
+                        <Search className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 rounded-[24px] bg-slate-900/[0.04] p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Try prompts like</p>
+                    <div className="mt-3 space-y-2 text-sm text-slate-700">
+                      <button
+                        type="button"
+                        onClick={() => applyExplorePrompt("uplifting child friendly adventures", "child-friendly")}
+                        className="block text-left transition hover:text-slate-950"
+                      >
+                        “uplifting child friendly adventures”
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => applyExplorePrompt("fast car chases and dramatic pursuits", "car-chases")}
+                        className="block text-left transition hover:text-slate-950"
+                      >
+                        “fast car chases and dramatic pursuits”
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => applyExplorePrompt("happy family moments with playful energy", "happy")}
+                        className="block text-left transition hover:text-slate-950"
+                      >
+                        “happy family moments with playful energy”
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </section>
             </div>
           </div>
         ) : isLoading ? (
@@ -611,12 +951,13 @@ export default function ExplorePage() {
             <div className="w-16 h-16 border-4 border-gray-300 border-t-[#00E21B] rounded-full animate-spin mb-4" />
             <p className="text-lg text-gray-800">Loading videos...</p>
           </div>
-        ) : hasSearched && videos.length > 0 ? (
-          <>
-            {/* Main content layout with portrait video container - centered */}
-            <div className="relative w-full max-w-md mx-auto flex flex-col items-center justify-center">
-              {/* Video navigation indicator */}
-              <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full shadow-md">
+        ) : hasResults ? (
+          viewMode === "vertical" ? (
+            <div
+              className="relative mx-auto flex w-full flex-col items-center justify-center"
+              style={{ maxWidth: isCurrentVideoLandscape ? "min(94vw, 880px)" : "400px" }}
+            >
+              <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-40 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full shadow-md">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium">{currentIndex + 1}</span>
                   <span className="text-xs text-gray-500">of</span>
@@ -624,42 +965,36 @@ export default function ExplorePage() {
                 </div>
               </div>
 
-              {/* Portrait video container with fixed aspect ratio */}
               <div
                 ref={videoContainerRef}
                 className={cn(
-                  "relative mx-auto rounded-2xl overflow-hidden shadow-xl transition-all duration-300",
+                  "relative mx-auto overflow-hidden rounded-2xl shadow-xl transition-all duration-300",
+                  isCurrentVideoLandscape
+                    ? "bg-[radial-gradient(circle_at_top,_rgba(0,226,27,0.18),_rgba(15,23,42,0.92)_56%)]"
+                    : "",
                   swipeDirection === "up" && "transform -translate-y-8 scale-95 opacity-90",
                   swipeDirection === "down" && "transform translate-y-8 scale-95 opacity-90",
                 )}
-                style={{
-                  width: "100%",
-                  maxWidth: "400px",
-                  height: "80vh",
-                  maxHeight: "calc(100vh - 160px)",
-                  aspectRatio: "9/16",
-                }}
+                style={verticalPlayerStyle}
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
               >
                 {currentVideo && (
-                  <div onClick={toggleVideoPlayback}>
-                    <VideoPlayer
-                      key={`video-${currentIndex}-${currentVideo.uniqueId || Date.now()}-${Math.random().toString(36).substring(2, 9)}`}
-                      videoId={currentVideo.video_id || "fallback-1"}
-                      startTime={currentVideo.start_time || 0}
-                      fallbackUrl={useFallback ? currentVideo.url : undefined}
-                      autoPlay={isVideoPlaying}
-                    />
-                  </div>
+                  <VideoPlayer
+                    key={`video-${currentIndex}-${currentVideo.uniqueId ?? currentVideo.video_id ?? "fallback-1"}`}
+                    videoId={currentVideo.video_id || "fallback-1"}
+                    startTime={currentVideo.start_time || 0}
+                    fallbackUrl={useFallback ? currentVideo.url : undefined}
+                    autoPlay
+                    fitMode="smart"
+                    onAspectRatioChange={setCurrentVideoAspectRatio}
+                  />
                 )}
 
-                {/* Large swipe areas for easier navigation */}
                 <div className="absolute top-0 left-0 right-0 h-1/2 z-10 opacity-0" onClick={handlePrevious} />
                 <div className="absolute bottom-0 left-0 right-0 h-1/2 z-10 opacity-0" onClick={handleNext} />
 
-                {/* Navigation buttons - centered at bottom */}
                 <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex gap-4 z-20">
                   <Button
                     variant="outline"
@@ -682,28 +1017,18 @@ export default function ExplorePage() {
                 </div>
               </div>
             </div>
-
-            {/* Change Preferences button - MOVED TO LEFT */}
-            <div className="fixed bottom-6 left-6 z-50">
-              <Button
-                variant="default"
-                className="bg-[#00E21B] text-black hover:bg-[#00E21B]/90 shadow-md"
-                onClick={() => setIsDrawerOpen(true)}
-              >
-                <Settings className="mr-2 h-4 w-4" />
-                Change Preferences
-              </Button>
-            </div>
-
-            {/* Style selector drawer */}
-            <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-              <StyleSelector
-                onClose={() => setIsDrawerOpen(false)}
-                onChangePreferences={handleStyleChange}
-                initialMood={mood}
+          ) : (
+            <div className="flex h-full w-full max-w-7xl flex-1 min-h-0 items-stretch">
+              <SearchResultsGallery
+                videos={videos}
+                className="flex-1"
+                onVideoSelect={(video) => {
+                  const matchedVideo = videos.find((item) => (item.uniqueId ?? item.video_id) === (video.uniqueId ?? video.video_id))
+                  setActiveGalleryVideo(matchedVideo ? { ...matchedVideo, aspectRatio: video.aspectRatio } : null)
+                }}
               />
-            </Drawer>
-          </>
+            </div>
+          )
         ) : hasSearched ? (
           <div className="text-center bg-white p-6 rounded-lg shadow-md">
             <p className="text-lg mb-4 text-gray-800">No videos found</p>
@@ -716,6 +1041,214 @@ export default function ExplorePage() {
             </Button>
           </div>
         ) : null}
+
+        {isGalleryView ? (
+          <div className="fixed inset-x-4 bottom-5 z-50 mx-auto w-auto max-w-4xl md:inset-x-6 md:bottom-6">
+            <div className="mx-auto flex max-w-4xl flex-col gap-3 rounded-[28px] bg-white/82 p-3 shadow-[0_24px_70px_rgba(15,23,42,0.16)] ring-1 ring-white/75 backdrop-blur-xl md:flex-row md:items-center">
+              <Select
+                value={selectedCategoryValue}
+                onValueChange={(value) => setCategory(value === ALL_TAGS_VALUE ? "" : value)}
+              >
+                <SelectTrigger className="h-12 w-full rounded-full border-0 bg-slate-900/[0.04] px-3.5 text-sm text-slate-700 shadow-none ring-1 ring-slate-900/6 md:w-[172px]">
+                  <div className="flex items-center gap-1.5">
+                    <span className="flex h-4 w-4 items-center justify-center text-slate-700">
+                      {selectedCategoryOption ? (
+                        <selectedCategoryOption.icon className="h-4 w-4" />
+                      ) : (
+                        <Sparkles className="h-4 w-4" />
+                      )}
+                    </span>
+                    <span className="font-medium">
+                      {selectedCategoryOption ? selectedCategoryOption.shortLabel : "All Tags"}
+                    </span>
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL_TAGS_VALUE}>
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="h-4 w-4" />
+                      <span>All Tags</span>
+                    </div>
+                  </SelectItem>
+                  {CATEGORY_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      <div className="flex items-center gap-2">
+                        <option.icon className="h-4 w-4" />
+                        <span>{option.shortLabel}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <div className="flex h-12 w-full items-center gap-2 rounded-full bg-slate-900/[0.04] pl-4 pr-2 ring-1 ring-slate-900/6">
+                <input
+                  type="text"
+                  placeholder={currentQuery || "Describe the next set of videos..."}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="h-full w-full bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-500"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      handleSearch()
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={handleSearch}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#00E21B] text-black shadow-[0_14px_30px_rgba(0,226,27,0.24)] transition hover:bg-[#00E21B]/90"
+                  aria-label="Search videos"
+                >
+                  <Search className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {hasResults && !isGalleryView ? (
+          <>
+            <div
+              className={cn(
+                "fixed z-50",
+                isGalleryView ? "left-4 top-20 md:left-6 md:top-24" : "bottom-6 left-6",
+              )}
+            >
+              <Button
+                variant="default"
+                className="bg-[#00E21B] text-black hover:bg-[#00E21B]/90 shadow-md"
+                onClick={() => setIsDrawerOpen(true)}
+              >
+                <Settings className="mr-2 h-4 w-4" />
+                Change Preferences
+              </Button>
+            </div>
+
+            <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
+              <DrawerContent className="mx-auto w-[calc(100%-1rem)] max-w-[38rem] rounded-[30px] border-white/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(240,250,242,0.96))] shadow-[0_28px_80px_rgba(15,23,42,0.18)]">
+                <DrawerHeader className="px-4 pb-1 pt-4 sm:px-5">
+                  <DrawerTitle className="text-center text-lg text-slate-950">Change Preferences</DrawerTitle>
+                  <DrawerDescription className="text-center text-sm text-slate-600">
+                    Update the tag or rewrite the search to refresh the vertical feed.
+                  </DrawerDescription>
+                </DrawerHeader>
+
+                <div className="space-y-3 px-4 pb-2 pt-3 sm:px-5">
+                  <div className="grid gap-3 sm:grid-cols-[168px_minmax(0,1fr)]">
+                    <Select
+                      value={selectedCategoryValue}
+                      onValueChange={(value) => setCategory(value === ALL_TAGS_VALUE ? "" : value)}
+                    >
+                      <SelectTrigger className="h-11 w-full rounded-full border-0 bg-slate-900/[0.04] px-3 text-sm text-slate-700 shadow-none ring-1 ring-slate-900/6">
+                        <div className="flex items-center gap-1.5">
+                          <span className="flex h-4 w-4 items-center justify-center text-slate-700">
+                            {selectedCategoryOption ? (
+                              <selectedCategoryOption.icon className="h-4 w-4" />
+                            ) : (
+                              <Sparkles className="h-4 w-4" />
+                            )}
+                          </span>
+                          <span className="font-medium">
+                            {selectedCategoryOption ? selectedCategoryOption.shortLabel : "All Tags"}
+                          </span>
+                        </div>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={ALL_TAGS_VALUE}>
+                          <div className="flex items-center gap-2">
+                            <Sparkles className="h-4 w-4" />
+                            <span>All Tags</span>
+                          </div>
+                        </SelectItem>
+                        {CATEGORY_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            <div className="flex items-center gap-2">
+                              <option.icon className="h-4 w-4" />
+                              <span>{option.shortLabel}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <div className="flex h-11 w-full items-center gap-2 rounded-full bg-slate-900/[0.04] pl-4 pr-2 ring-1 ring-slate-900/6">
+                      <input
+                        type="text"
+                        placeholder={currentQuery || "Describe the next set of videos..."}
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="h-full w-full bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-500"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            applyPreferenceChanges()
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={applyPreferenceChanges}
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#00E21B] text-black shadow-[0_14px_30px_rgba(0,226,27,0.24)] transition hover:bg-[#00E21B]/90"
+                        aria-label="Search videos"
+                      >
+                        <Search className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <DrawerFooter className="gap-2 px-4 pb-4 pt-3 sm:grid sm:grid-cols-2 sm:px-5">
+                  <Button
+                    onClick={applyPreferenceChanges}
+                    className="bg-[#00E21B] text-black hover:bg-[#00E21B]/90 shadow-[0_18px_40px_rgba(0,226,27,0.2)]"
+                  >
+                    Update Results
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handlePreferenceReset}
+                    className="border-slate-300 bg-white/70 text-slate-700 hover:bg-white"
+                  >
+                    Start New Search
+                  </Button>
+                </DrawerFooter>
+              </DrawerContent>
+            </Drawer>
+          </>
+        ) : null}
+
+        <Dialog
+          open={Boolean(activeGalleryVideo)}
+          onOpenChange={(open) => {
+            if (!open) {
+              setActiveGalleryVideo(null)
+            }
+          }}
+        >
+          <DialogContent className="w-auto max-w-[96vw] gap-0 overflow-hidden border-[#00E21B]/25 bg-[radial-gradient(circle_at_top,_rgba(0,226,27,0.22),_rgba(7,17,31,0.97)_54%),linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))] p-3 text-white shadow-[0_30px_100px_rgba(15,23,42,0.45)] sm:rounded-[32px] md:p-4 [&>button:last-child]:right-2.5 [&>button:last-child]:top-2.5 [&>button:last-child]:z-50 [&>button:last-child]:flex [&>button:last-child]:h-9 [&>button:last-child]:w-9 [&>button:last-child]:items-center [&>button:last-child]:justify-center [&>button:last-child]:rounded-full [&>button:last-child]:border [&>button:last-child]:border-white/20 [&>button:last-child]:bg-white/92 [&>button:last-child]:text-slate-900 [&>button:last-child]:opacity-100 [&>button:last-child]:shadow-[0_16px_40px_rgba(15,23,42,0.2)] hover:[&>button:last-child]:bg-white [&>button:last-child>svg]:h-3.5 [&>button:last-child>svg]:w-3.5">
+            <DialogTitle className="sr-only">
+              {activeGalleryVideo?.filename ?? "Selected video"}
+            </DialogTitle>
+            {activeGalleryVideo ? (
+              <div className="mx-auto flex max-h-[82vh] items-center justify-center">
+                <div
+                  className="overflow-hidden rounded-[26px] border border-white/12 bg-[radial-gradient(circle_at_top,_rgba(0,226,27,0.22),_rgba(4,10,24,0.95)_58%)] shadow-[0_24px_60px_rgba(0,0,0,0.32)]"
+                  style={{ aspectRatio: activeGalleryAspectRatio, width: activeGalleryWidth }}
+                >
+                  <VideoPlayer
+                    key={`dialog-${activeGalleryVideo.uniqueId ?? activeGalleryVideo.video_id}`}
+                    videoId={activeGalleryVideo.video_id}
+                    startTime={activeGalleryVideo.start_time || 0}
+                    fallbackUrl={activeGalleryVideo.url}
+                    autoPlay
+                    fitMode="contain"
+                    showNativeControls
+                  />
+                </div>
+              </div>
+            ) : null}
+          </DialogContent>
+        </Dialog>
 
         {error && (
           <div className="absolute bottom-20 left-1/2 -translate-x-1/2 bg-amber-500/90 text-white px-4 py-2 rounded-full text-sm">
