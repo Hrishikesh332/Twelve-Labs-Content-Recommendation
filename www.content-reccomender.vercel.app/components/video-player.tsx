@@ -74,6 +74,7 @@ export default function VideoPlayer({
   onAspectRatioChange,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
+  const providedUrl = fallbackUrl?.trim()
   const [isPlaying, setIsPlaying] = useState(false)
   const [videoSrc, setVideoSrc] = useState<string>("")
   const [loadAttempt, setLoadAttempt] = useState(0)
@@ -132,11 +133,9 @@ export default function VideoPlayer({
 
     // Use the backend-provided URL exactly as returned.
     // Re-decoding or re-serializing signed S3 URLs can invalidate the signature.
-    const processedUrl = fallbackUrl?.trim()
-
-    if (processedUrl) {
+    if (providedUrl) {
       // If a direct fallback URL is provided, use it
-      setVideoSrc(processedUrl)
+      setVideoSrc(providedUrl)
     } else if (fallbackVideos[videoId]) {
       // If we have a specific fallback for this video ID, use it
       setVideoSrc(fallbackVideos[videoId])
@@ -167,7 +166,7 @@ export default function VideoPlayer({
     }, 1000)
 
     return () => clearTimeout(loadingTimer)
-  }, [videoId, startTime, fallbackUrl])
+  }, [videoId, startTime, providedUrl])
 
   // Try to autoplay as soon as video source is set
   useEffect(() => {
@@ -235,6 +234,11 @@ export default function VideoPlayer({
   }
 
   const handleVideoError = () => {
+    if (providedUrl) {
+      setIsPlaying(false)
+      return
+    }
+
     const disneyKeys = Object.keys(fallbackVideos).filter(
       (key) =>
         key !== "fallback-1" &&

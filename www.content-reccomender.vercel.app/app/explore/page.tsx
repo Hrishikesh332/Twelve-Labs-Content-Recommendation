@@ -330,7 +330,6 @@ export default function ExplorePage() {
   const [error, setError] = useState<string | null>(null)
   const videoContainerRef = useRef<HTMLDivElement>(null)
   const touchStartY = useRef<number | null>(null)
-  const [useFallback, setUseFallback] = useState(true)
   const [swipeDirection, setSwipeDirection] = useState<"none" | "up" | "down">("none")
   const [isTransitioning, setIsTransitioning] = useState(false)
 
@@ -409,19 +408,11 @@ export default function ExplorePage() {
         )
 
         if (validVideos.length > 0) {
-          const processedVideos = validVideos.map((video, index) => {
-            const videoUrl =
-              video.url ||
-              fallbackVideos.find((fb) => fb.video_id === video.video_id)?.url ||
-              (category && Object.prototype.hasOwnProperty.call(categoryFallbacks, category.toLowerCase())
-                ? categoryFallbacks[category.toLowerCase() as keyof typeof categoryFallbacks]
-                : undefined) ||
-              fallbackVideos[index % fallbackVideos.length].url
-
+          const processedVideos = validVideos.map((video) => {
             return {
               ...video,
-              url: videoUrl,
-              uniqueId: `${video.video_id}-${index}-${Date.now()}`,
+              url: typeof video.url === "string" && video.url.trim() ? video.url.trim() : undefined,
+              uniqueId: `${video.video_id}-${Date.now()}`,
             }
           })
           setVideos(processedVideos)
@@ -482,8 +473,6 @@ export default function ExplorePage() {
         setCurrentIndex(0) // Reset to first video
         setError(`Using Disney videos as fallbacks`)
       }
-
-      setUseFallback(true)
       setHasSearched(true)
     } finally {
       setIsLoading(false)
@@ -912,7 +901,7 @@ export default function ExplorePage() {
                     key={`video-${currentIndex}-${currentVideo.uniqueId ?? currentVideo.video_id ?? "fallback-1"}`}
                     videoId={currentVideo.video_id || "fallback-1"}
                     startTime={currentVideo.start_time || 0}
-                    fallbackUrl={useFallback ? currentVideo.url : undefined}
+                    fallbackUrl={currentVideo.url}
                     autoPlay
                     fitMode="smart"
                     onAspectRatioChange={setCurrentVideoAspectRatio}
