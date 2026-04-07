@@ -46,9 +46,7 @@ export default function SearchResultsGallery({ videos, className, onVideoSelect 
           return
         }
 
-        videoElement.play().catch((error) => {
-          console.warn(`Autoplay failed for ${key}:`, error)
-        })
+        videoElement.play().catch(() => {})
       })
     }, 200)
 

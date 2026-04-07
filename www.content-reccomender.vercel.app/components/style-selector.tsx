@@ -21,7 +21,6 @@ export default function StyleSelector({ onClose, onChangePreferences, initialMoo
   }, [initialMood])
 
   const handleSubmit = () => {
-    console.log("Selected preferences:", { mood })
     // Call the onChangePreferences callback to update videos with the mood
     if (onChangePreferences) {
       onChangePreferences(undefined, mood)
@@ -32,7 +31,6 @@ export default function StyleSelector({ onClose, onChangePreferences, initialMoo
 
   // Update the handleNewSearch function to properly reset and show the search form
   const handleNewSearch = () => {
-    console.log("Resetting preferences and starting new search")
     // Reset mood and trigger new search
     if (onChangePreferences) {
       // Pass empty strings to reset mood, and add a special flag to show the search form

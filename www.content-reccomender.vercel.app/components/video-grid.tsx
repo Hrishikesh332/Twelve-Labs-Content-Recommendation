@@ -218,11 +218,10 @@ export default function VideoGrid() {
       const timer = setTimeout(() => {
         Object.values(videoRefs.current).forEach((videoRef) => {
           if (videoRef) {
-            videoRef.play().catch((err) => {
-              console.warn("Autoplay prevented:", err)
+            videoRef.play().catch(() => {
               // If autoplay is prevented, we'll try again on user interaction
               const handleUserInteraction = () => {
-                videoRef.play().catch((e) => console.error("Error playing video after interaction:", e))
+                videoRef.play().catch(() => {})
                 document.removeEventListener("click", handleUserInteraction)
               }
               document.addEventListener("click", handleUserInteraction, { once: true })
@@ -310,4 +309,3 @@ export default function VideoGrid() {
     </div>
   )
 }
-

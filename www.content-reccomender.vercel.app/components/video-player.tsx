@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { Play, Volume2, VolumeX } from "lucide-react"
 
 interface VideoPlayerProps {
@@ -52,6 +52,18 @@ const fallbackVideos: Record<string, string> = {
     "https://test-001-fashion.s3.eu-north-1.amazonaws.com/videos-embed/08ff403a-63e7-4188-9eed-3858f4457173_078_🧑‍🍳 Experimenting With Flavors! ｜ Ratatouille ｜ Disney Kids_pwpRSNCdr6w.mp4",
 }
 
+function isIgnorablePlayError(error: unknown) {
+  if (!(error instanceof Error)) {
+    return false
+  }
+
+  return (
+    error.name === "AbortError" ||
+    error.message.includes("removed from the document") ||
+    error.message.includes("The play() request was interrupted")
+  )
+}
+
 export default function VideoPlayer({
   videoId,
   startTime = 0,
@@ -73,19 +85,7 @@ export default function VideoPlayer({
   const resolvedFitMode =
     fitMode === "smart" ? (videoAspectRatio && videoAspectRatio > 1.05 ? "contain" : "cover") : fitMode
 
-  const isIgnorablePlayError = (error: unknown) => {
-    if (!(error instanceof Error)) {
-      return false
-    }
-
-    return (
-      error.name === "AbortError" ||
-      error.message.includes("removed from the document") ||
-      error.message.includes("The play() request was interrupted")
-    )
-  }
-
-  const attemptPlay = (videoElement: HTMLVideoElement | null, context: string) => {
+  const attemptPlay = useCallback((videoElement: HTMLVideoElement | null, context: string) => {
     if (!videoElement) {
       return
     }
@@ -98,24 +98,18 @@ export default function VideoPlayer({
           return
         }
 
-        console.error(`Error ${context}:`, error)
-
         if (context === "auto-playing video" && !videoElement.muted) {
-          console.log("Trying muted autoplay as fallback")
           videoElement.muted = true
           setIsMuted(true)
           videoElement.play().catch((retryError) => {
-            if (!isIgnorablePlayError(retryError)) {
-              console.error("Even muted autoplay failed:", retryError)
+            if (isIgnorablePlayError(retryError)) {
+              return
             }
           })
         }
       })
     }
-  }
-
-  // Debug the component rendering
-  console.log("VideoPlayer rendering:", { videoId, fallbackUrl, autoPlay })
+  }, [])
 
   // Hide controls after a delay
   useEffect(() => {
@@ -136,8 +130,6 @@ export default function VideoPlayer({
     setIsMuted(true)
     setVideoAspectRatio(null)
 
-    console.log("VideoPlayer: Setting up video for ID:", videoId, "with fallback:", fallbackUrl)
-
     // Use the backend-provided URL exactly as returned.
     // Re-decoding or re-serializing signed S3 URLs can invalidate the signature.
     const processedUrl = fallbackUrl?.trim()
@@ -145,11 +137,9 @@ export default function VideoPlayer({
     if (processedUrl) {
       // If a direct fallback URL is provided, use it
       setVideoSrc(processedUrl)
-      console.log("Using provided fallback URL:", processedUrl)
     } else if (fallbackVideos[videoId]) {
       // If we have a specific fallback for this video ID, use it
       setVideoSrc(fallbackVideos[videoId])
-      console.log("Using specific fallback for video ID:", videoId)
     } else {
       // Try a random fallback from the Disney videos
       const disneyKeys = Object.keys(fallbackVideos).filter(
@@ -164,7 +154,6 @@ export default function VideoPlayer({
       )
       const randomFallback = fallbackVideos[disneyKeys[Math.floor(Math.random() * disneyKeys.length)]]
       setVideoSrc(randomFallback)
-      console.log("Using random Disney fallback video:", randomFallback)
     }
 
     if (videoRef.current) {
@@ -183,8 +172,6 @@ export default function VideoPlayer({
   // Try to autoplay as soon as video source is set
   useEffect(() => {
     if (videoSrc && videoRef.current && !isLoading && autoPlay) {
-      console.log("Attempting to autoplay video:", videoSrc)
-
       const playTimer = setTimeout(() => {
         attemptPlay(videoRef.current, "auto-playing video")
       }, 300)
@@ -195,7 +182,7 @@ export default function VideoPlayer({
       videoRef.current.pause()
       setIsPlaying(false)
     }
-  }, [videoSrc, isLoading, autoPlay])
+  }, [videoSrc, isLoading, autoPlay, attemptPlay])
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -221,7 +208,7 @@ export default function VideoPlayer({
       document.removeEventListener("click", handleUserInteraction)
       document.removeEventListener("touchstart", handleUserInteraction)
     }
-  }, [isPlaying, isLoading])
+  }, [isPlaying, isLoading, attemptPlay])
 
   const togglePlay = () => {
     // Mark that user has interacted
@@ -248,8 +235,6 @@ export default function VideoPlayer({
   }
 
   const handleVideoError = () => {
-    console.error(`Video failed to load: ${videoSrc}. Attempt: ${loadAttempt + 1}`)
-
     const disneyKeys = Object.keys(fallbackVideos).filter(
       (key) =>
         key !== "fallback-1" &&
@@ -264,14 +249,12 @@ export default function VideoPlayer({
     const nextFallbackIndex = (loadAttempt + 1) % disneyKeys.length
     const nextFallback = fallbackVideos[disneyKeys[nextFallbackIndex]]
 
-    console.log("Video load error. Trying next fallback:", nextFallback)
     setVideoSrc(nextFallback)
     setLoadAttempt((prev) => prev + 1)
 
     if (loadAttempt > 3) {
       // Use Buzz video as the most reliable fallback
       const reliableFallback = fallbackVideos["buzz"]
-      console.log("Multiple failures. Using most reliable fallback:", reliableFallback)
       setVideoSrc(reliableFallback)
     }
   }
@@ -313,7 +296,6 @@ export default function VideoPlayer({
               onPlay={() => setIsPlaying(true)}
               onPause={() => setIsPlaying(false)}
               onError={handleVideoError}
-              onCanPlay={() => console.log("Video can play:", videoSrc)}
             />
           )}
 

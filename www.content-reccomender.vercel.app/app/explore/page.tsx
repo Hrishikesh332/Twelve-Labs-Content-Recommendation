@@ -340,19 +340,9 @@ export default function ExplorePage() {
   const [hasSearched, setHasSearched] = useState(false)
   const [currentQuery, setCurrentQuery] = useState("")
 
-  // State for theme and mood
-  const [theme, setTheme] = useState("")
-  const [mood, setMood] = useState("")
   const [viewMode, setViewMode] = useState<ViewMode>("vertical")
   const [activeGalleryVideo, setActiveGalleryVideo] = useState<VideoItem | null>(null)
   const [currentVideoAspectRatio, setCurrentVideoAspectRatio] = useState<number | null>(null)
-
-  // Show swipe instruction when a new video loads or when changing videos
-
-  // Debug logging for API calls
-  const logApiCall = (method: string, url: string, body: Record<string, unknown>) => {
-    console.log(`API ${method} to ${url}:`, body)
-  }
 
   // Create a fresh search query based on the base query and preferences
   const createSearchQuery = (baseQuery: string, themeValue?: string, moodValue?: string) => {
@@ -380,8 +370,6 @@ export default function ExplorePage() {
       // Join with spaces to create a clean query
       finalQuery = parts.join(" ")
     }
-
-    console.log("Created fresh search query:", finalQuery)
     return finalQuery
   }
 
@@ -396,14 +384,8 @@ export default function ExplorePage() {
       // Create a fresh search query
       const freshQuery = createSearchQuery(query, themeValue, moodValue)
 
-      console.log("Fetching videos with query:", freshQuery)
-
-      // Log the API call we're about to make
       const requestBody = { query: freshQuery }
       const searchEndpoint = `${API_BASE_URL}/search`
-      console.log("URL ", searchEndpoint)
-
-      logApiCall("POST", searchEndpoint, requestBody)
 
       // Try to fetch from backend
       const response = await fetch(searchEndpoint, {
@@ -415,21 +397,16 @@ export default function ExplorePage() {
         signal: AbortSignal.timeout(15000),
       })
 
-      console.log("Backend response status:", response.status)
-
       if (!response.ok) {
         throw new Error(`Failed to fetch videos: ${response.status} ${response.statusText}`)
       }
 
       const data = await response.json()
-      console.log("Received data from backend:", data)
 
       if (Array.isArray(data) && data.length > 0) {
         const validVideos = data.filter(
           (video) => video && typeof video === "object" && "video_id" in video && "start_time" in video,
         )
-
-        console.log("Valid videos after filtering:", validVideos)
 
         if (validVideos.length > 0) {
           const processedVideos = validVideos.map((video, index) => {
@@ -447,24 +424,16 @@ export default function ExplorePage() {
               uniqueId: `${video.video_id}-${index}-${Date.now()}`,
             }
           })
-
-          console.log("Final processed videos:", processedVideos)
           setVideos(processedVideos)
           setCurrentIndex(0)
           setHasSearched(true)
           return
-        } else {
-          console.warn("No valid videos after filtering")
         }
-      } else {
-        console.warn("No array or empty array returned from backend")
       }
 
       // If we get here, we didn't get valid videos from the API
       throw new Error("No valid videos returned from the API")
-    } catch (error) {
-      console.error("Using fallback videos due to error:", error)
-
+    } catch {
       // Create category-specific fallbacks if a category is selected
       const lowerCategory = category.toLowerCase()
       if (category && Object.prototype.hasOwnProperty.call(categoryFallbacks, lowerCategory)) {
@@ -543,10 +512,6 @@ export default function ExplorePage() {
 
     // Store the original query without any theme/mood enhancements
     setCurrentQuery(query)
-
-    // Reset theme and mood when doing a new search
-    setTheme("")
-    setMood("")
 
     fetchVideos(query)
     setShowRecommendationForm(false)
@@ -684,53 +649,15 @@ export default function ExplorePage() {
 
   // Reset recommendation form
   const resetSearch = () => {
-    console.log("Resetting search and showing form")
     setShowRecommendationForm(true)
     setHasSearched(false)
     setVideos([])
     setCurrentIndex(0)
-    setTheme("")
-    setMood("")
     setCurrentQuery("")
     setSearchQuery("")
     setCategory("")
     setViewMode("vertical")
     setActiveGalleryVideo(null)
-  }
-
-  // Update the handleStyleChange function to handle the showSearchForm flag
-  const handleStyleChange = (newTheme?: string, newMood?: string, showSearchForm?: boolean) => {
-    console.log("Style change requested:", { newTheme, newMood, showSearchForm })
-
-    // If showSearchForm is true, reset to search form
-    if (showSearchForm) {
-      resetSearch()
-      return
-    }
-
-    // Update theme and mood if provided
-    const updatedTheme = newTheme !== undefined ? newTheme : theme
-    const updatedMood = newMood !== undefined ? newMood : mood
-
-    setTheme(updatedTheme)
-    setMood(updatedMood)
-
-    // Close the drawer
-    setIsDrawerOpen(false)
-
-    // If we have a current query, fetch new videos with it and the new preferences
-    // But make sure we're using the original query without previous enhancements
-    if (currentQuery) {
-      console.log("Fetching new videos with updated preferences:", {
-        query: currentQuery, // Use the original query
-        theme: updatedTheme,
-        mood: updatedMood,
-      })
-      fetchVideos(currentQuery, updatedTheme, updatedMood)
-    } else {
-      // If no current query, reset to the form
-      resetSearch()
-    }
   }
 
   return (
