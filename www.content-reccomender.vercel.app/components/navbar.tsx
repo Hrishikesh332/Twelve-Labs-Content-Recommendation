@@ -43,6 +43,7 @@ export default function Navbar() {
   const navItems = [
     { name: "Home", path: "/" },
     { name: "Explore", path: "/explore" },
+    { name: "Architecture", path: "/architecture" },
     { name: "Features", path: "/#features" },
     { name: "Blog", path: "https://www.twelvelabs.io/blog/content-recommender", external: true },
   ]
@@ -253,4 +254,3 @@ export default function Navbar() {
     </>
   )
 }
-
