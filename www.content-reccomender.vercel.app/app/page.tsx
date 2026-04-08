@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
 import Link from "next/link"
 import Navbar from "@/components/navbar"
 import VideoGrid from "@/components/video-grid"
@@ -9,6 +10,26 @@ import { ComingSoonDialog } from "@/components/coming-soon-dialog"
 
 export default function Home() {
   const [showComingSoonDialog, setShowComingSoonDialog] = useState(false)
+  const systemShowcase = [
+    {
+      title: "System Architecture",
+      description:
+        "An end-to-end view of how multimodal indexing, vector storage, and semantic retrieval work together behind every recommendation.",
+      imageSrc: "/Architecture.png",
+      imageAlt: "System architecture diagram for the content recommendation platform",
+      imageWidth: 1500,
+      imageHeight: 1049,
+    },
+    {
+      title: "Recommendation Workflow",
+      description:
+        "A cleaner look at the user journey from preferences and mood search through embeddings, metadata, and final content recommendations.",
+      imageSrc: "/Workflow.png",
+      imageAlt: "Recommendation workflow diagram for the content recommendation platform",
+      imageWidth: 1536,
+      imageHeight: 1024,
+    },
+  ]
 
   return (
     <div className="min-h-screen bg-[#F4F3F3] overflow-hidden">
@@ -156,6 +177,59 @@ export default function Home() {
           </div>
         </div>
 
+        <section className="relative z-10 bg-[#F4F3F3] px-6 pb-24">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-14">
+              <span className="inline-block px-4 py-1.5 bg-[#F8F8F7] text-[#1D1C1B]/70 rounded-full text-sm font-medium mb-4 shadow-sm">
+                Architecture & Workflow
+              </span>
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#1D1C1B]">
+                System Overview
+              </h2>
+              <p className="mt-4 max-w-3xl mx-auto text-[#1D1C1B]/70 text-base sm:text-lg leading-7">
+                A simple look at the system architecture and the recommendation workflow behind the platform.
+              </p>
+            </div>
+
+            <div className="space-y-14">
+              {systemShowcase.map((item, index) => (
+                <article
+                  key={item.title}
+                  className={index === 0 ? "space-y-6" : "space-y-6 border-t border-[#D3D1CF] pt-14"}
+                >
+                  <div className="grid gap-5 md:grid-cols-[160px_minmax(0,1fr)]">
+                    <div className="pt-1">
+                      <span className="text-xs font-semibold uppercase tracking-[0.22em] text-[#1D1C1B]/45">
+                        Section 0{index + 1}
+                      </span>
+                      <div className="mt-3 h-px w-14 bg-[#D3D1CF]" />
+                    </div>
+
+                    <div className="max-w-3xl">
+                      <h3 className="text-2xl sm:text-3xl font-bold text-[#1D1C1B]">{item.title}</h3>
+                      <p className="mt-3 text-sm sm:text-base leading-7 text-[#1D1C1B]/75">{item.description}</p>
+                    </div>
+                  </div>
+
+                  <div className="mx-auto max-w-[920px] rounded-[1.5rem] border border-dashed border-[#CFCBC8] p-2 sm:p-3">
+                    <div className="overflow-hidden rounded-[1.2rem] border border-[#DCD8D5]">
+                      <Image
+                        src={item.imageSrc}
+                        alt={item.imageAlt}
+                        width={item.imageWidth}
+                        height={item.imageHeight}
+                        sizes="(min-width: 1536px) 920px, (min-width: 1024px) 78vw, 100vw"
+                        className="h-auto w-full"
+                        priority={index === 0}
+                      />
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* Ultra-Minimal Footer */}
         <footer className="bg-[#F8F8F7] py-6 px-6 relative z-10 border-t border-[#D3D1CF]">
           <div className="max-w-6xl mx-auto">
@@ -263,6 +337,3 @@ export default function Home() {
     </div>
   )
 }
-
-
-
